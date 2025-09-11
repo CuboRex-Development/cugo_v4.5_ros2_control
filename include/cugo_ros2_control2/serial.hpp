@@ -30,6 +30,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <optional>
 
 #define PACKET_SIZE 72
 #define PACKET_HEADER_SIZE 8
@@ -57,6 +58,7 @@ public:
   ~Serial();
   void open(const std::string & port, int baudrate);
   void close();
+  bool reconnect(const std::string & port, int baudrate);
   void start_read();
   void register_callback(DataCallback callback);
   void write(const SendValue & sv);
@@ -77,7 +79,8 @@ public:
   boost::asio::io_context io_context_;
   boost::asio::serial_port serial_port_;
   std::thread io_thread_;
-  boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_;
+  std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
+  work_guard_;
   std::array<uint8_t, 256> raw_read_buffer_;
   std::vector<uint8_t> packet_buffer_;
   //boost::asio::streambuf stream_buffer_;

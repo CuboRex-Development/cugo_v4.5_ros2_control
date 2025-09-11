@@ -47,6 +47,7 @@ protected:
 // USBとRaspberryPiPicoを接続してcolcon build / colcon testすること
 TEST_F(SerialTest, test_open)
 {
+  std::cout << "[Serial TEST] test_open" << std::endl;
   // シリアルポートを開くテスト
   EXPECT_NO_THROW({test_serial->open("/dev/ttyACM0", 115200);});
   EXPECT_TRUE(test_serial->serial_port_.is_open());
@@ -58,6 +59,7 @@ TEST_F(SerialTest, test_open)
 
 TEST_F(SerialTest, test_close)
 {
+  std::cout << "[Serial TEST] test_close" << std::endl;
   // ポートを開いてから閉じるテスト
   EXPECT_NO_THROW({test_serial->open("/dev/ttyACM0", 115200);});
   EXPECT_TRUE(test_serial->serial_port_.is_open());
@@ -310,4 +312,36 @@ TEST_F(SerialTest, test_create_packet)
   unsigned char * body_ptr = &packet[8];
   uint16_t calculated_checksum = Serial::calc_checksum(body_ptr, 64);
   EXPECT_EQ(received_checksum, calculated_checksum);
+}
+
+TEST_F(SerialTest, test_reconnect)
+{
+  std::cout << "[Serial TEST] test_reconnect" << std::endl;
+  const std::string port = "/dev/ttyACM0";
+  const int baudrate = 115200;
+
+  // 正常にオープンできることを確認
+  ASSERT_NO_THROW(
+  {
+    test_serial->open(port, baudrate);
+  });
+  ASSERT_TRUE(test_serial->serial_port_.is_open());
+
+  // 一度閉じる
+  test_serial->close();
+  // io_contextが止まると再開できないのでリスタートする
+  test_serial->io_context_.restart();
+  test_serial->io_thread_ = std::thread([&]() {test_serial->io_context_.run();});
+  ASSERT_FALSE(test_serial->serial_port_.is_open());
+
+  // 再接続処理を呼び出す
+  bool success = false;
+  ASSERT_NO_THROW(
+  {
+    success = test_serial->reconnect("/dev/ttyACM0", 115200);
+  });
+
+  // 再接続が成功し、ポートが開いていることを確認
+  EXPECT_TRUE(success);
+  EXPECT_TRUE(test_serial->serial_port_.is_open());
 }

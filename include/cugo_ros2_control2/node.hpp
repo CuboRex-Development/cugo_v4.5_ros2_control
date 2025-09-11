@@ -37,6 +37,13 @@
 namespace cugo_ros2_control2
 {
 
+enum class ConnectionState
+{
+  CONNECTED,
+  DISCONNECTED,
+  RECONNECTING
+};
+
 class Node : public rclcpp::Node
 {
 public:
@@ -60,6 +67,8 @@ private:
   std::shared_ptr<cugo_ros2_control2::Serial> serial_;
 
   // データ共有
+  ConnectionState connection_state_{ConnectionState::CONNECTED};
+  rclcpp::Time last_reconnect_attmpt_time_;
   std::mutex data_mutex_;
   geometry_msgs::msg::Twist latest_cmd_vel_;
   rclcpp::Time last_cmd_vel_time_;

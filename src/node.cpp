@@ -268,7 +268,37 @@ void Node::control_loop()
   serial_->write(sv);
 
   // --- シリアルタイムアウト監視 ---
-  if ((now - local_last_serial_receive_time).seconds() > serial_timeout_) {
+  bool is_serial_timeout = (now - local_last_serial_receive_time).seconds() > serial_timeout_;
+
+  if (connection_state_ == ConnectionState::CONNECTED) {
+    if (is_serial_timeout) {
+      RCLCPP_WARN(
+        this->get_logger(), "Serial connection timeout detected. Entering reconnect mode...");
+      connection_state_ = ConnectionState::RECONNECTING;
+      last_reconnect_attmpt_time_ = now; // 最初の試行時刻を記録
+    }
+  } else if (connection_state_ == ConnectionState::RECONNECTING) {
+    // 3秒に一回だけ再接続を試みる
+    if ((now - last_reconnect_attmpt_time_).seconds() > 3.0) {
+      RCLCPP_INFO(this->get_logger(), "Trying to reconnect...");
+      try {
+        serial_->reconnect(serial_port, serial_baudrate);
+
+        RCLCPP_INFO(this->get_logger(), "Reconnect successful!");
+        connection_state_ = ConnectionState::CONNECTED;
+        is_first_serial_data_ = true;
+        {
+          std::lock_guard<std::mutex> lock(data_mutex_);
+          last_serial_receive_time_ = now;
+        }
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(this->get_logger(), "Reconnect attmpt failed: %s", e.what());
+      }
+      last_reconnect_attmpt_time_ = now; // 次の試行時刻を更新
+    }
+  }
+
+  if (connection_state_ != ConnectionState::CONNECTED) {
     RCLCPP_WARN(this->get_logger(), "シリアル通信未達。接続を確認してください。");
     // Picoが機能不全の可能性。速度ゼロのオドメトリを発行して異常を知らせる。
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -286,7 +316,7 @@ void Node::control_loop()
     current_odom_.twist.covariance[35] = 1e9;
 
     publish_odom_and_tf();  // 既に止まっている位置情報と速度ゼロを定期的に発行
-    RCLCPP_DEBUG(this->get_logger(), "control_loop() published");
+    RCLCPP_DEBUG(this->get_logger(), "control_loop() zero /cmd_vel published");
   }
 }
 

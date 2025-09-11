@@ -37,6 +37,7 @@ Serial::~Serial()
 
 void Serial::open(const std::string & port, int baudrate)
 {
+  std::cout << "[Serial INFO] open()" << std::endl;
   if (serial_port_.is_open()) {
     std::cerr << "[Serial WARN] Serial port " << port << " alrady open." << std::endl;
     return;
@@ -82,11 +83,16 @@ void Serial::open(const std::string & port, int baudrate)
 
 void Serial::close()
 {
+  std::cout << "[Serial INFO] close()" << std::endl;
   // io_context_に与えていたダミーワークをリセットしてrun()から脱出
   work_guard_.reset();
 
   if (!io_context_.stopped()) {
     io_context_.stop();
+  }
+
+  if (io_thread_.joinable()) {
+    io_thread_.join();
   }
 
   if (serial_port_.is_open()) {
@@ -97,6 +103,28 @@ void Serial::close()
     } else {
       std::cout << "[Serial INFO] Serial port closed." << std::endl;
     }
+  }
+}
+
+bool Serial::reconnect(const std::string & port, int baudrate)
+{
+  std::cout << "[Serial INFO] Attempting to reconnect to " << port << "..." << std::endl;
+  close(); // 既存のポートを確実に閉じる
+
+  // io_contextを再利用可能な状態に戻す
+  if (io_context_.stopped()) {
+    io_context_.restart();
+  }
+  // work_guard_の再構築
+  work_guard_.emplace(boost::asio::make_work_guard(io_context_.get_executor()));
+
+  try {
+    open(port, baudrate);
+    std::cout << "[Serial INFO] Reconnect successful." << std::endl;
+    return true;
+  } catch (const std::exception & e) {
+    std::cerr << "[Serial WARN] Reconnect failed: " << e.what() << std::endl;
+    return false;
   }
 }
 
