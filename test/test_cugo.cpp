@@ -15,6 +15,7 @@
 */
 
 #include <gtest/gtest.h>
+
 #include "cugo_ros2_control2/cugo.hpp"
 
 using namespace cugo_ros2_control2;

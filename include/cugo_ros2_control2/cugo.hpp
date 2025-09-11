@@ -40,7 +40,6 @@ struct Odom
   double yaw;
 };
 
-
 class CuGo
 {
 public:
@@ -61,5 +60,5 @@ private:
   int ENCODER_RESOLUTION_;
 };
 
-} // namespace cugo_ros2_control2
+}  // namespace cugo_ros2_control2
 #endif  // CUGO_ROS2_CONTROL2_CUGO_HPP

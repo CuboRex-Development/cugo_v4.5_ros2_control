@@ -19,8 +19,7 @@
 using namespace cugo_ros2_control2;
 
 Serial::Serial()
-: serial_port_(io_context_),
-  work_guard_(boost::asio::make_work_guard(io_context_.get_executor()))
+: serial_port_(io_context_), work_guard_(boost::asio::make_work_guard(io_context_.get_executor()))
 {
   io_thread_ = std::thread([this]() {io_context_.run();});
   std::cout << "[Serial INFO] Serial object created." << std::endl;
@@ -45,22 +44,18 @@ void Serial::open(const std::string & port, int baudrate)
 
   try {
     serial_port_.open(port);
+    serial_port_.set_option(boost::asio::serial_port_base::baud_rate(baudrate));
+    serial_port_.set_option(boost::asio::serial_port_base::character_size(8));
     serial_port_.set_option(
-      boost::asio::serial_port_base::baud_rate(baudrate));
+      boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none));
     serial_port_.set_option(
-      boost::asio::serial_port_base::character_size(8));
-    serial_port_.set_option(
-      boost::asio::serial_port_base::parity(
-        boost::asio::serial_port_base::parity::none));
-    serial_port_.set_option(
-      boost::asio::serial_port_base::stop_bits(
-        boost::asio::serial_port_base::stop_bits::one));
+      boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one));
     serial_port_.set_option(
       boost::asio::serial_port_base::flow_control(
         boost::asio::serial_port_base::flow_control::none));
 
-    std::cout << "[Serial INFO] Serial port " << port << " opened with baudrate " << baudrate <<
-      std::endl;
+    std::cout << "[Serial INFO] Serial port " << port << " opened with baudrate " << baudrate
+              << std::endl;
 
     // I/O スレッド開始 (エラーハンドリング)
     if (!io_thread_.joinable()) {
@@ -74,11 +69,13 @@ void Serial::open(const std::string & port, int baudrate)
           }
         });
     }
-    start_read(); // ポートが開いたら読み取りを開始
+    start_read();  // ポートが開いたら読み取りを開始
   } catch (const boost::system::system_error & e) {
-    std::cerr << "[Serial ERROR] Error opening serial port " << port << ": " << e.what() <<
-      std::endl;
-    std::cout << "[Serial INFO] シリアルポートの指定が正しいか、読み書き権限があるか確認してください" << std::endl;
+    std::cerr << "[Serial ERROR] Error opening serial port " << port << ": " << e.what()
+              << std::endl;
+    std::cout
+      << "[Serial INFO] シリアルポートの指定が正しいか、読み書き権限があるか確認してください"
+      << std::endl;
     throw e;
   }
 }
@@ -103,22 +100,15 @@ void Serial::close()
   }
 }
 
-void Serial::register_callback(DataCallback callback)
-{
-  data_callback_ = callback;
-}
+void Serial::register_callback(DataCallback callback) {data_callback_ = callback;}
 
 void Serial::start_read()
 {
   serial_port_.async_read_some(
-      boost::asio::buffer(raw_read_buffer_),
-      boost::bind(
-        &Serial::handle_read,
-        this,
-        boost::asio::placeholders::error,
-        boost::asio::placeholders::bytes_transferred
-      )
-  );
+    boost::asio::buffer(raw_read_buffer_),
+    boost::bind(
+      &Serial::handle_read, this, boost::asio::placeholders::error,
+      boost::asio::placeholders::bytes_transferred));
 }
 
 void Serial::handle_read(const boost::system::error_code & error, std::size_t bytes_transferred)
@@ -132,16 +122,13 @@ void Serial::handle_read(const boost::system::error_code & error, std::size_t by
       // その他の予期せぬエラー
       std::cerr << "[Serial ERROR][handle_read] Read error: " << error.message() << std::endl;
     }
-    return; // エラー時はループを継続しない
+    return;  // エラー時はループを継続しない
   }
 
   // --- 2. 受信データをパケット組み立て用バッファ(packet_buffer_)に追加 ---
   if (bytes_transferred > 0) {
     packet_buffer_.insert(
-        packet_buffer_.end(),
-        raw_read_buffer_.begin(),
-        raw_read_buffer_.begin() + bytes_transferred
-    );
+      packet_buffer_.end(), raw_read_buffer_.begin(), raw_read_buffer_.begin() + bytes_transferred);
   }
 
   // --- 3. バッファからパケットを探索・処理するループ ---
@@ -168,8 +155,8 @@ void Serial::handle_read(const boost::system::error_code & error, std::size_t by
 
       // パケットを検証 (サイズやチェックサム)
       if (decoded_packet.size() != 72) {
-        std::cerr << "[Serial WARN] Decoded packet size is not 72 bytes: "
-                  << decoded_packet.size() << std::endl;
+        std::cerr << "[Serial WARN] Decoded packet size is not 72 bytes: " << decoded_packet.size()
+                  << std::endl;
       } else {
         unsigned char * body_ptr = &decoded_packet[8];
         uint16_t received_checksum = *reinterpret_cast<uint16_t *>(decoded_packet.data() + 6);
@@ -188,7 +175,7 @@ void Serial::handle_read(const boost::system::error_code & error, std::size_t by
     } catch (const std::runtime_error & e) {
       std::cerr << "[Serial WARN] Decode error: " << e.what() << std::endl;
     }
-  } // パケット探索ループの終わり
+  }  // パケット探索ループの終わり
 
   // --- 5. 次の非同期読み込みを開始 ---
   start_read();
@@ -197,9 +184,9 @@ void Serial::handle_read(const boost::system::error_code & error, std::size_t by
 uint16_t Serial::calc_checksum(const unsigned char * body_data, size_t body_size)
 {
   if (body_size % 2 != 0) {
-    std::cerr << "[Serial ERROR] Checksum calculation requires even body size, but got " <<
-      body_size << std::endl;
-    return 0; // エラーを示すために 0 を返す (呼び出し側で要チェック)
+    std::cerr << "[Serial ERROR] Checksum calculation requires even body size, but got "
+              << body_size << std::endl;
+    return 0;  // エラーを示すために 0 を返す (呼び出し側で要チェック)
   }
 
   uint32_t sum = 0;
@@ -223,10 +210,10 @@ std::vector<unsigned char> Serial::create_packet(const SendValue & sv)
 
   // --- ボディの作成 ---
   // ボディ部分へのポインタを取得
-  unsigned char * body_ptr = packet.data() + 8; // ヘッダ(8バイト)の後ろ
+  unsigned char * body_ptr = packet.data() + 8;  // ヘッダ(8バイト)の後ろ
   // RPM値をボディにコピー
-  memcpy(body_ptr + 0, &sv.l_rpm, sizeof(float)); // ボディの0バイト目から
-  memcpy(body_ptr + 4, &sv.r_rpm, sizeof(float)); // ボディの4バイト目から
+  memcpy(body_ptr + 0, &sv.l_rpm, sizeof(float));  // ボディの0バイト目から
+  memcpy(body_ptr + 4, &sv.r_rpm, sizeof(float));  // ボディの4バイト目から
   // 残りのボディは0で初期化済み
 
   // --- ヘッダの作成 ---
@@ -256,18 +243,13 @@ void Serial::write(const SendValue & sv)
 
   // Step 3: エンコードされたパケットを非同期で送信する
   boost::asio::async_write(
-      serial_port_,
-      boost::asio::buffer(encoded_packet),
-      boost::bind(
-        &Serial::handle_write,
-        this,
-        boost::asio::placeholders::error,
-        boost::asio::placeholders::bytes_transferred
-      )
-  );
+    serial_port_, boost::asio::buffer(encoded_packet),
+    boost::bind(
+      &Serial::handle_write, this, boost::asio::placeholders::error,
+      boost::asio::placeholders::bytes_transferred));
 }
 
-void Serial::handle_write(const boost::system::error_code & error, size_t/* bytes_transferred*/)
+void Serial::handle_write(const boost::system::error_code & error, size_t /* bytes_transferred*/)
 {
   if (error) {
     // ポートを閉じたことによる正常な中断はエラーとして扱わない
@@ -280,7 +262,6 @@ void Serial::handle_write(const boost::system::error_code & error, size_t/* byte
     return;
   }
 }
-
 
 std::vector<unsigned char> Serial::encode(const std::vector<unsigned char> & raw_packet)
 {
@@ -331,7 +312,7 @@ std::vector<unsigned char> Serial::encode(const std::vector<unsigned char> & raw
 std::vector<unsigned char> Serial::decode(const std::vector<unsigned char> & received_packet)
 {
   if (received_packet.empty()) {
-    return {}; // 空の入力は空の出力
+    return {};  // 空の入力は空の出力
   }
 
   // 終端マーカーを除いた、エンコードされた本体の部分を抽出
@@ -352,7 +333,7 @@ std::vector<unsigned char> Serial::decode(const std::vector<unsigned char> & rec
 
   const size_t source_size = encoded_body.size();
   std::vector<unsigned char> decoded_packet;
-  decoded_packet.reserve(source_size); // 事前にメモリ確保
+  decoded_packet.reserve(source_size);  // 事前にメモリ確保
 
   size_t read_index = 0;
 
@@ -398,7 +379,7 @@ float Serial::bin_to_float(const unsigned char * data)
 // int32_t -> bin
 std::vector<unsigned char> Serial::int32_to_bin(int32_t value)
 {
-  std::vector<unsigned char> bytes(sizeof(int32_t)); // 4バイト確保
+  std::vector<unsigned char> bytes(sizeof(int32_t));  // 4バイト確保
   // value のメモリ上の表現を bytes ベクターにコピー
   memcpy(bytes.data(), &value, sizeof(int32_t));
   return bytes;

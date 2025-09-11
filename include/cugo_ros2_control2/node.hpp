@@ -17,22 +17,22 @@
 #ifndef CUGO_ROS2_CONTROL2_NODE_HPP
 #define CUGO_ROS2_CONTROL2_NODE_HPP
 
+#include <diagnostic_updater/diagnostic_updater.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <memory>
 #include <mutex>
+#include <nav_msgs/msg/odometry.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 #include <string>
 #include <vector>
 
-#include <rclcpp/rclcpp.hpp>
-#include <geometry_msgs/msg/twist.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
-#include <diagnostic_updater/diagnostic_updater.hpp>
-#include "tf2_ros/transform_broadcaster.h"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2/LinearMath/Matrix3x3.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "cugo_ros2_control2/cugo.hpp"
 #include "cugo_ros2_control2/serial.hpp"
+#include "tf2/LinearMath/Matrix3x3.h"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_ros/transform_broadcaster.h"
 
 namespace cugo_ros2_control2
 {
@@ -69,13 +69,13 @@ private:
   //int32_t latest_right_encoder_{0};
   int32_t prev_left_encoder_{0};
   int32_t prev_right_encoder_{0};
-  bool is_first_serial_data_{true}; // 最初の受信データかどうかのフラグ
+  bool is_first_serial_data_{true};  // 最初の受信データかどうかのフラグ
   double left_wheel_angle_{0.0};
   double right_wheel_angle_{0.0};
 
   // タイマーコールバック
   rclcpp::TimerBase::SharedPtr control_timer;
-//  rclcpp::TimerBase::SharedPtr check_timeout_timer;
+  //  rclcpp::TimerBase::SharedPtr check_timeout_timer;
 
   // launchファイルのパラメータ
   std::string odom_frame_id_;
@@ -85,8 +85,8 @@ private:
   double control_frequency;
   std::string serial_port;
   int serial_baudrate;
-  double cmd_vel_timeout_; // /cmd_velのタイムアウト期間
-  double serial_timeout_;  // シリアル通信のタイムアウト期間
+  double cmd_vel_timeout_;  // /cmd_velのタイムアウト期間
+  double serial_timeout_;   // シリアル通信のタイムアウト期間
   double tread;
   double l_wheel_radius, r_wheel_radius;
   double reduction_ratio;
@@ -115,5 +115,5 @@ private:
   sensor_msgs::msg::JointState joint_state_;
 };
 
-} // namespace cugo_ros2_control2
+}  // namespace cugo_ros2_control2
 #endif  // CUGO_ROS2_CONTROL2_NODE_HPP

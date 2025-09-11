@@ -16,9 +16,10 @@
 
 #include <gtest/gtest.h>
 //#include "cugo_ros2_control2/node.hpp"
-#include "cugo_ros2_control2/serial.hpp"
-#include <vector>
 #include <cstdint>
+#include <vector>
+
+#include "cugo_ros2_control2/serial.hpp"
 
 using namespace cugo_ros2_control2;
 
@@ -47,33 +48,21 @@ protected:
 TEST_F(SerialTest, test_open)
 {
   // シリアルポートを開くテスト
-  EXPECT_NO_THROW(
-  {
-    test_serial->open("/dev/ttyACM0", 115200);
-  });
+  EXPECT_NO_THROW({test_serial->open("/dev/ttyACM0", 115200);});
   EXPECT_TRUE(test_serial->serial_port_.is_open());
 
   // 存在しないポートを開こうとすると例外を投げるテスト
   test_serial->close();
-  EXPECT_THROW(
-  {
-    test_serial->open("/dev/null", 115200);
-  }, boost::system::system_error);
+  EXPECT_THROW({test_serial->open("/dev/null", 115200);}, boost::system::system_error);
 }
 
 TEST_F(SerialTest, test_close)
 {
   // ポートを開いてから閉じるテスト
-  EXPECT_NO_THROW(
-  {
-    test_serial->open("/dev/ttyACM0", 115200);
-  });
+  EXPECT_NO_THROW({test_serial->open("/dev/ttyACM0", 115200);});
   EXPECT_TRUE(test_serial->serial_port_.is_open());
 
-  EXPECT_NO_THROW(
-  {
-    test_serial->close();
-  });
+  EXPECT_NO_THROW({test_serial->close();});
   EXPECT_FALSE(test_serial->serial_port_.is_open());
 }
 
@@ -87,7 +76,7 @@ TEST_F(SerialTest, test_calc_checksum_int32)
 
   // ケース2: 左エンコーダカウント = 1, 右 = 0
   std::vector<unsigned char> body2(PACKET_BODY_SIZE, 0);
-  int32_t left_count1 = 1;   // 0x01 0x00 0x00 0x00 (リトルエンディアン)
+  int32_t left_count1 = 1;  // 0x01 0x00 0x00 0x00 (リトルエンディアン)
   int32_t right_count1 = 0;
   memcpy(body2.data(), &left_count1, sizeof(int32_t));
   memcpy(body2.data() + sizeof(int32_t), &right_count1, sizeof(int32_t));
@@ -96,7 +85,7 @@ TEST_F(SerialTest, test_calc_checksum_int32)
 
   // ケース3: 左エンコーダカウント = -1, 右 = 0
   std::vector<unsigned char> body3(PACKET_BODY_SIZE, 0);
-  int32_t left_count2 = -1;   // 0xFF 0xFF 0xFF 0xFF
+  int32_t left_count2 = -1;  // 0xFF 0xFF 0xFF 0xFF
   int32_t right_count2 = 0;
   memcpy(body3.data(), &left_count2, sizeof(int32_t));
   memcpy(body3.data() + sizeof(int32_t), &right_count2, sizeof(int32_t));
@@ -106,7 +95,7 @@ TEST_F(SerialTest, test_calc_checksum_int32)
   // ケース4: 左エンコーダカウント = 1000, 右 = -2000
   std::vector<unsigned char> body4(PACKET_BODY_SIZE, 0);
   int32_t left_count3 = 1000;    // 0xE8 0x03 0x00 0x00
-  int32_t right_count3 = -2000;   // 0x30 0xF8 0xFF 0xFF
+  int32_t right_count3 = -2000;  // 0x30 0xF8 0xFF 0xFF
   memcpy(body4.data(), &left_count3, sizeof(int32_t));
   memcpy(body4.data() + sizeof(int32_t), &right_count3, sizeof(int32_t));
   // 期待値計算: 0x03E8 + 0x0000 + 0xF830 + 0xFFFF = 0x1FC17 => (0xFC17 + 1) = 0xFC18 => ~0xFC18 = 0x03E7
@@ -114,8 +103,8 @@ TEST_F(SerialTest, test_calc_checksum_int32)
 
   // ケース5: 左右に大きな値
   std::vector<unsigned char> body5(PACKET_BODY_SIZE, 0);
-  int32_t left_count4 = 123456789;    // 0x15 CD 5B 07
-  int32_t right_count4 = 987654321;   // 0xB1 E1 82 3A
+  int32_t left_count4 = 123456789;   // 0x15 CD 5B 07
+  int32_t right_count4 = 987654321;  // 0xB1 E1 82 3A
 
   printf("Test Case 5 Data Setup:\n");
   printf("  left_count4 = %d (0x%08X)\n", left_count4, left_count4);
@@ -132,7 +121,6 @@ TEST_F(SerialTest, test_calc_checksum_int32)
   EXPECT_EQ(Serial::calc_checksum(body5.data(), body5.size()), 0x87FF);
 }
 
-
 TEST_F(SerialTest, test_float_bin_roundtrip)
 {
   // テストしたい float 値のリスト
@@ -143,8 +131,7 @@ TEST_F(SerialTest, test_float_bin_roundtrip)
     123.45f,
     -67.89f,
     std::numeric_limits<float>::max(),
-    -std::numeric_limits<float>::max()
-  };
+    -std::numeric_limits<float>::max()};
 
   for (const auto & original_value : test_values) {
     // 1. float -> bin
@@ -162,66 +149,66 @@ TEST_F(SerialTest, test_float_bin_roundtrip)
     // デバッグ用に値を出力 (テストが失敗した場合に役立つ)
     if (original_value != roundtrip_value) {
       printf(
-          "Mismatch for value %.8f: bin is [0x%02X, 0x%02X, 0x%02X, 0x%02X], roundtrip is %.8f\n",
-          original_value, bytes[0], bytes[1], bytes[2], bytes[3], roundtrip_value);
+        "Mismatch for value %.8f: bin is [0x%02X, 0x%02X, 0x%02X, 0x%02X], roundtrip is %.8f\n",
+        original_value, bytes[0], bytes[1], bytes[2], bytes[3], roundtrip_value);
     }
   }
 }
 
 TEST_F(SerialTest, test_int32_to_bin)
 {
-    // ケース1: 0
-    int32_t val1 = 0;
-    std::vector<unsigned char> expected1 = {0x00, 0x00, 0x00, 0x00};
-    EXPECT_EQ(Serial::int32_to_bin(val1), expected1);
+  // ケース1: 0
+  int32_t val1 = 0;
+  std::vector<unsigned char> expected1 = {0x00, 0x00, 0x00, 0x00};
+  EXPECT_EQ(Serial::int32_to_bin(val1), expected1);
 
-    // ケース2: 正の値
-    int32_t val2 = 1000; // 16進数: 0x000003E8
-    std::vector<unsigned char> expected2 = {0xE8, 0x03, 0x00, 0x00}; // リトルエンディアン
-    EXPECT_EQ(Serial::int32_to_bin(val2), expected2);
+  // ケース2: 正の値
+  int32_t val2 = 1000;                                              // 16進数: 0x000003E8
+  std::vector<unsigned char> expected2 = {0xE8, 0x03, 0x00, 0x00};  // リトルエンディアン
+  EXPECT_EQ(Serial::int32_to_bin(val2), expected2);
 
-    // ケース3: 負の値
-    int32_t val3 = -2000; // 16進数: 0xFFFFF830
-    std::vector<unsigned char> expected3 = {0x30, 0xF8, 0xFF, 0xFF}; // リトルエンディアン
-    EXPECT_EQ(Serial::int32_to_bin(val3), expected3);
+  // ケース3: 負の値
+  int32_t val3 = -2000;                                             // 16進数: 0xFFFFF830
+  std::vector<unsigned char> expected3 = {0x30, 0xF8, 0xFF, 0xFF};  // リトルエンディアン
+  EXPECT_EQ(Serial::int32_to_bin(val3), expected3);
 
-    // ケース4: 境界値 INT32_MAX
-    int32_t val4 = std::numeric_limits<int32_t>::max(); // 0x7FFFFFFF
-    std::vector<unsigned char> expected4 = {0xFF, 0xFF, 0xFF, 0x7F}; // リトルエンディアン
-    EXPECT_EQ(Serial::int32_to_bin(val4), expected4);
+  // ケース4: 境界値 INT32_MAX
+  int32_t val4 = std::numeric_limits<int32_t>::max();               // 0x7FFFFFFF
+  std::vector<unsigned char> expected4 = {0xFF, 0xFF, 0xFF, 0x7F};  // リトルエンディアン
+  EXPECT_EQ(Serial::int32_to_bin(val4), expected4);
 
-    // ケース5: 境界値 INT32_MIN
-    int32_t val5 = std::numeric_limits<int32_t>::min(); // 0x80000000
-    std::vector<unsigned char> expected5 = {0x00, 0x00, 0x00, 0x80}; // リトルエンディアン
-    EXPECT_EQ(Serial::int32_to_bin(val5), expected5);
+  // ケース5: 境界値 INT32_MIN
+  int32_t val5 = std::numeric_limits<int32_t>::min();               // 0x80000000
+  std::vector<unsigned char> expected5 = {0x00, 0x00, 0x00, 0x80};  // リトルエンディアン
+  EXPECT_EQ(Serial::int32_to_bin(val5), expected5);
 }
 
 TEST_F(SerialTest, test_bin_to_int32)
 {
-    // ケース1: 0
-    unsigned char data1[] = {0x00, 0x00, 0x00, 0x00};
-    int32_t expected1 = 0;
-    EXPECT_EQ(Serial::bin_to_int32(data1), expected1);
+  // ケース1: 0
+  unsigned char data1[] = {0x00, 0x00, 0x00, 0x00};
+  int32_t expected1 = 0;
+  EXPECT_EQ(Serial::bin_to_int32(data1), expected1);
 
-    // ケース2: 正の値
-    unsigned char data2[] = {0xE8, 0x03, 0x00, 0x00}; // 1000 (リトルエンディアン)
-    int32_t expected2 = 1000;
-    EXPECT_EQ(Serial::bin_to_int32(data2), expected2);
+  // ケース2: 正の値
+  unsigned char data2[] = {0xE8, 0x03, 0x00, 0x00};  // 1000 (リトルエンディアン)
+  int32_t expected2 = 1000;
+  EXPECT_EQ(Serial::bin_to_int32(data2), expected2);
 
-    // ケース3: 負の値
-    unsigned char data3[] = {0x30, 0xF8, 0xFF, 0xFF}; // -2000 (リトルエンディアン)
-    int32_t expected3 = -2000;
-    EXPECT_EQ(Serial::bin_to_int32(data3), expected3);
+  // ケース3: 負の値
+  unsigned char data3[] = {0x30, 0xF8, 0xFF, 0xFF};  // -2000 (リトルエンディアン)
+  int32_t expected3 = -2000;
+  EXPECT_EQ(Serial::bin_to_int32(data3), expected3);
 
-    // ケース4: 境界値 INT32_MAX
-    unsigned char data4[] = {0xFF, 0xFF, 0xFF, 0x7F}; // 0x7FFFFFFF (リトルエンディアン)
-    int32_t expected4 = std::numeric_limits<int32_t>::max();
-    EXPECT_EQ(Serial::bin_to_int32(data4), expected4);
+  // ケース4: 境界値 INT32_MAX
+  unsigned char data4[] = {0xFF, 0xFF, 0xFF, 0x7F};  // 0x7FFFFFFF (リトルエンディアン)
+  int32_t expected4 = std::numeric_limits<int32_t>::max();
+  EXPECT_EQ(Serial::bin_to_int32(data4), expected4);
 
-    // ケース5: 境界値 INT32_MIN
-    unsigned char data5[] = {0x00, 0x00, 0x00, 0x80}; // 0x80000000 (リトルエンディアン)
-    int32_t expected5 = std::numeric_limits<int32_t>::min();
-    EXPECT_EQ(Serial::bin_to_int32(data5), expected5);
+  // ケース5: 境界値 INT32_MIN
+  unsigned char data5[] = {0x00, 0x00, 0x00, 0x80};  // 0x80000000 (リトルエンディアン)
+  int32_t expected5 = std::numeric_limits<int32_t>::min();
+  EXPECT_EQ(Serial::bin_to_int32(data5), expected5);
 }
 
 TEST_F(SerialTest, test_packetserial_encode)
@@ -312,8 +299,8 @@ TEST_F(SerialTest, test_create_packet)
   EXPECT_EQ(length, 72);
 
   // 3-3. ボディのデータを確認
-  float l_rpm = *reinterpret_cast<float *>(&packet[8]);  // ボディの先頭から0バイト目
-  float r_rpm = *reinterpret_cast<float *>(&packet[12]); // ボディの先頭から4バイト目
+  float l_rpm = *reinterpret_cast<float *>(&packet[8]);   // ボディの先頭から0バイト目
+  float r_rpm = *reinterpret_cast<float *>(&packet[12]);  // ボディの先頭から4バイト目
   EXPECT_FLOAT_EQ(l_rpm, sv.l_rpm);
   EXPECT_FLOAT_EQ(r_rpm, sv.r_rpm);
 

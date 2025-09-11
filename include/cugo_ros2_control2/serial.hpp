@@ -16,20 +16,20 @@
 #ifndef CUGO_ROS2_CONTROL2_SERIAL_HPP
 #define CUGO_ROS2_CONTROL2_SERIAL_HPP
 
-#include <string>
-#include <boost/asio.hpp>
-#include <boost/bind/bind.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/executor_work_guard.hpp>
-#include <iostream>
 #include <algorithm>
-#include <functional>
-#include <vector>
-#include <thread>
 #include <array>
-#include <cstdint>
+#include <boost/asio.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/bind/bind.hpp>
 #include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iostream>
 #include <stdexcept>
+#include <string>
+#include <thread>
+#include <vector>
 
 #define PACKET_SIZE 72
 #define PACKET_HEADER_SIZE 8
@@ -46,7 +46,6 @@ struct SendValue
   float r_rpm;
   // 送信メッセージが増えればここに追加
 };
-
 
 class Serial
 {
@@ -89,5 +88,5 @@ private:
   void handle_write(const boost::system::error_code & error, std::size_t bytes_transferred);
 };
 
-} // namespace cugo_ros2_control2
+}  // namespace cugo_ros2_control2
 #endif  // CUGO_ROS2_CONTROL2_SERIAL_HPP

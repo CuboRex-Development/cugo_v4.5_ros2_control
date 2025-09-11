@@ -30,8 +30,8 @@ Node::Node()
   this->declare_parameter("control_frequency", 10.0);
   this->declare_parameter("serial_port", "/dev/ttyACM0");
   this->declare_parameter("serial_baudrate", 115200);
-  this->declare_parameter("cmd_vel_timeout", 0.5); // 秒
-  this->declare_parameter("serial_timeout", 0.5);  // 秒
+  this->declare_parameter("cmd_vel_timeout", 0.5);  // 秒
+  this->declare_parameter("serial_timeout", 0.5);   // 秒
   this->declare_parameter("tread", 0.376);
   this->declare_parameter("l_wheel_radius", 0.03858);
   this->declare_parameter("r_wheel_radius", 0.03858);
@@ -90,20 +90,17 @@ Node::Node()
 
   // 各クラスの初期化
   cugo_ = std::make_unique<cugo_ros2_control2::CuGo>(
-      l_wheel_radius, r_wheel_radius, tread, reduction_ratio, encoder_resolution
-  );
+    l_wheel_radius, r_wheel_radius, tread, reduction_ratio, encoder_resolution);
   serial_ = std::make_shared<cugo_ros2_control2::Serial>();
 
   // Serial通信の開始
   try {
     serial_->open(serial_port, serial_baudrate);
-    serial_->register_callback(
-        std::bind(&Node::serial_data_callback, this, std::placeholders::_1)
-    );
-    serial_->start_read(); // 受信ループを開始
+    serial_->register_callback(std::bind(&Node::serial_data_callback, this, std::placeholders::_1));
+    serial_->start_read();  // 受信ループを開始
   } catch (const std::exception & e) {
-    RCLCPP_FATAL(this->get_logger(), "Failed to setup serial communication: %s. Shutting down.",
-      e.what());
+    RCLCPP_FATAL(
+      this->get_logger(), "Failed to setup serial communication: %s. Shutting down.", e.what());
     rclcpp::shutdown();
     return;
   }
@@ -124,12 +121,10 @@ Node::Node()
   joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-
   // ループ処理の開始
   control_timer = this->create_wall_timer(
     std::chrono::milliseconds(static_cast<int>(1000.0 / control_frequency)),
-    std::bind(&Node::control_loop, this)
-  );
+    std::bind(&Node::control_loop, this));
 }
 
 void Node::cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
@@ -157,14 +152,13 @@ void Node::serial_data_callback(const std::vector<unsigned char> & body_data)
   int32_t latest_left_encoder_ = current_left_encoder;
   int32_t latest_right_encoder_ = current_right_encoder;
 
-  RCLCPP_INFO(this->get_logger(), "Encoder: L=%d, R=%d",
-      current_left_encoder, current_right_encoder);
+  RCLCPP_INFO(
+    this->get_logger(), "Encoder: L=%d, R=%d", current_left_encoder, current_right_encoder);
 
   left_wheel_angle_ =
     (double)latest_left_encoder_ / (encoder_resolution * reduction_ratio) * 2.0 * M_PI;
   right_wheel_angle_ =
     (double)latest_right_encoder_ / (encoder_resolution * reduction_ratio) * 2.0 * M_PI;
-
 
   // 2. 状態を更新（Mutexで保護）
   {
@@ -181,7 +175,7 @@ void Node::serial_data_callback(const std::vector<unsigned char> & body_data)
 
     // 2回目以降の受信
     double dt = (current_receive_time - last_serial_receive_time_).seconds();
-    if (dt <= 0.0) { // 時間が進んでいない場合は計算しない
+    if (dt <= 0.0) {  // 時間が進んでいない場合は計算しない
       RCLCPP_WARN(this->get_logger(), "dt is zero or negative. Skipping odometry calculation.");
       return;
     }
@@ -260,7 +254,7 @@ void Node::control_loop()
   // --- 送信処理 ---
   cugo_ros2_control2::SendValue sv;
   sv.product_id = product_id;  // V4/V3iの区別。マイコン内でパラメータを切り替え処理を行う。
-  sv.robot_id = 0; // 複数台ロボットを動かしたときに使いたい。今は何もしない。
+  sv.robot_id = 0;  // 複数台ロボットを動かしたときに使いたい。今は何もしない。
 
   if ((now - local_last_cmd_vel_time).seconds() > cmd_vel_timeout_) {
     sv.l_rpm = 0.0f;
@@ -270,7 +264,7 @@ void Node::control_loop()
     sv.l_rpm = rpm.l_rpm;
     sv.r_rpm = rpm.r_rpm;
   }
-  RCLCPP_DEBUG(this->get_logger(),"command rpm(L/R): %f / %f", sv.l_rpm, sv.r_rpm);
+  RCLCPP_DEBUG(this->get_logger(), "command rpm(L/R): %f / %f", sv.l_rpm, sv.r_rpm);
   serial_->write(sv);
 
   // --- シリアルタイムアウト監視 ---
@@ -291,7 +285,7 @@ void Node::control_loop()
     current_odom_.twist.covariance[0] = 1e9;
     current_odom_.twist.covariance[35] = 1e9;
 
-    publish_odom_and_tf(); // 既に止まっている位置情報と速度ゼロを定期的に発行
+    publish_odom_and_tf();  // 既に止まっている位置情報と速度ゼロを定期的に発行
     RCLCPP_DEBUG(this->get_logger(), "control_loop() published");
   }
 }
@@ -325,18 +319,15 @@ void Node::publish_odom_and_tf()
   odom_pub_->publish(current_odom_);
 
   tf2::Quaternion q(
-    current_odom_.pose.pose.orientation.x,
-    current_odom_.pose.pose.orientation.y,
-    current_odom_.pose.pose.orientation.z,
-    current_odom_.pose.pose.orientation.w);
+    current_odom_.pose.pose.orientation.x, current_odom_.pose.pose.orientation.y,
+    current_odom_.pose.pose.orientation.z, current_odom_.pose.pose.orientation.w);
   double roll, pitch, yaw;
   tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-  RCLCPP_INFO(this->get_logger(), "Odometry: X=%lf, Y=%lf, Orientation=%lf",
-      current_odom_.pose.pose.position.x,
-      current_odom_.pose.pose.position.y,
-      yaw);
-  RCLCPP_INFO(this->get_logger(), "Velocity: Linear=%lf, Angular=%lf",
-      current_odom_.twist.twist.linear.x,
-      current_odom_.twist.twist.angular.z);
+  RCLCPP_INFO(
+    this->get_logger(), "Odometry: X=%lf, Y=%lf, Orientation=%lf",
+    current_odom_.pose.pose.position.x, current_odom_.pose.pose.position.y, yaw);
+  RCLCPP_INFO(
+    this->get_logger(), "Velocity: Linear=%lf, Angular=%lf", current_odom_.twist.twist.linear.x,
+    current_odom_.twist.twist.angular.z);
 }
