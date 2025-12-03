@@ -4,8 +4,9 @@
 
 クローラロボット開発プラットフォームのROS 2ノードです。
 
+<!-- TODO: cugo_v4.5_ros2_motorcontroller2のリンクを追記する -->
 ROS 2 topicの`/cmd_vel`をSubscribeし、`/odom`をPublishします。
-セットでArduinoスケッチの[cugo_ros2_motorcontroller2](https://github.com/CuboRex-Development/cugo_ros2_motorcontroller2)と使用します。
+セットでArduinoスケッチの[cugo_v4.5_ros2_motorcontroller2](null)、もしくは[cugo_ros2_motorcontroller2](https://github.com/CuboRex-Development/cugo_ros2_motorcontroller2)と使用します。
 
 ROS 2 Humble以降でご利用いただけます。
 
@@ -19,6 +20,42 @@ ROS 2 Humble以降でご利用いただけます。
 - [License](#license)
 
 # Features
+
+ROS 2 プログラムとロボットのプログラムとの仲介を行います。
+接続された製品に応じて、内部の計算を切り替えます。
+
+#### 対応製品
+
+<!-- TODO: V4.5のリンクを貼る -->
+<!-- TODO: 製品/ドライバ/Raspberry Pi Picoプログラム の表にする -->
+* [クローラロボット開発プラットフォーム CuGo V4.5](null)
+* [クローラロボット開発プラットフォーム CuGo V4](https://cuborex.com/product/?id=9)
+* クローラロボット開発プラットフォーム CuGo V3i（現在販売終了）
+
+#### 内部処理
+
+<!-- TODO: LD-2/CRCT01Aの表記わけを決める -->
+<!-- TODO: ドライバの説明をどこまでするか決める -->
+##### CRCT01A搭載製品の場合
+> [!NOTE] 対象商品：
+> * [クローラロボット開発プラットフォーム CuGo V4.5](null)
+
+Subscribeした`/cmd_vel`をロボットのマイコンに送信します。
+
+<!-- TODO: cugo_v4.5_ros2_motorcontroller2のリンクを追記する -->
+また、[cugo_v4.5_ros2_motorcontroller2](null)が書き込まれたロボットのマイコンから、CRCT01Aの計算したオドメトリを受け取ります。受け取ったオドメトリを`/odom`としてPublishします。
+
+<!-- TODO:図の修正 -->
+<img width="2527" height="1116" alt="image" src="https://github.com/user-attachments/assets/a8950d77-9907-4d95-99be-b6ca8f536b85" />
+
+
+
+##### LD-2搭載製品の場合
+> [!NOTE] 対象商品：
+> * [クローラロボット開発プラットフォーム CuGo V4](https://cuborex.com/product/?id=9)
+> * クローラロボット開発プラットフォーム CuGo V3i（現在販売終了）
+
+
 Subscribeした`/cmd_vel`の速度ベクトルになるような仮想車輪L/Rの回転数を計算します。
 
 計算した回転数をロボットのマイコンに送信します。
@@ -31,12 +68,6 @@ Subscribeした`/cmd_vel`の速度ベクトルになるような仮想車輪L/R�
 
 
 
-#### 対応製品
-
-* [クローラロボット開発プラットフォーム CuGo V4](https://cuborex.com/product/?id=9)
-* クローラロボット開発プラットフォーム CuGo V3i（現在販売終了）
-
-でお使いいただけます。
 
 
 # Requirements
@@ -53,7 +84,7 @@ ROS 2環境がない場合は[ROS 2 Documentation](https://docs.ros.org/en/jazzy
 ROS 2のワークスペース内でgit cloneしたのち、colcon buildしてください。
 ~~~
 $ cd ~/your_ros2_ws/src
-$ git clone https://github.com/CuboRex-Development/cugo_ros2_control2.git
+$ git clone https://github.com/CuboRex-Development/cugo_v4.5_ros2_control2.git
 $ cd ../..
 $ colcon build --symlink-install
 $ source ~/your_ros2_ws/install/local_setup.bash
@@ -61,7 +92,7 @@ $ source ~/your_ros2_ws/install/local_setup.bash
 
 ビルドエラーが発生する場合、依存パッケージをインストールしてから再度`colcon build`してください。
 ~~~
-$ rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_ros2_control2
+$ rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_v4.5_ros2_control2
 $ cd ~/your_ros2_ws
 $ colcon build --symlink-install
 $ source ~/your_ros2_ws/install/local_setup.bash
@@ -69,10 +100,21 @@ $ source ~/your_ros2_ws/install/local_setup.bash
 
 # Usage
 
-下記のコマンドでcugo_ros2_control2ノードが起動します。お手持ちのCuGoV3i / CuGoV4にあったlaunchファイルを指定してください。最適なパラメータが使用されます。
+下記のコマンドでcugo_v4.5_ros2_control2ノードが起動します。お手持ちのCuGoV3i / CuGoV4 / CuGo V4.5 にあったlaunchファイルを指定してください。最適なパラメータが使用されます。
 
 launchファイルのパラメータを変更することで微調整することもできます。詳細は[Parameters](#parameters)の項目を参照してください。
 
+#### クローラロボット開発プラットフォーム CuGo V4.5の方
+付属のRaspberryPiPicoとUSBケーブルで接続をしたのち、お客様環境にあった権限設定をしてからlaunchファイルを実行してください。
+
+~~~
+# RaspberryPiPicoの権限付与例
+# お客様環境に合わせてコマンドを実行してください。
+$ sudo chmod 777 /dev/ttyACM0
+
+# launch ファイルを実行
+$ ros2 launch cugo_ros2_control2 cugov4.5_ros2_control_launch.py
+~~~
 #### クローラロボット開発プラットフォーム CuGo V4の方
 付属のRaspberryPiPicoとUSBケーブルで接続をしたのち、お客様環境にあった権限設定をしてからlaunchファイルを実行してください。
 
@@ -97,7 +139,8 @@ $ sudo chmod 777 /dev/ttyACM0
 $ ros2 launch cugo_ros2_control2 cugov3i_ros2_control_launch.py
 ~~~
 
-#### ロボット側の操作
+#### 
+<!-- 参照先を対応表にする -->
 クローラロボット開発プラットフォーム付属のRaspberryPiPicoに[こちらのスケッチ](https://github.com/CuboRex-Development/cugo_ros2_motorcontroller2)を書き込み、ROS 2 PCとRaspberryPiPicoをUSBケーブルで接続してください。
 その後ROSパッケージを実行してください。自動で通信開始します。
 
