@@ -252,6 +252,18 @@ cugo_ros2_control2
 
 ### Arduinoドライバへの送信データ
 
+#### ヘッダ
+Data Name      | Data Type  | Data Size(byte) | Start Address in PacketHeader | Data Description
+---------------|------------|-----------------|-------------------------------|--------------------
+product_id     | uint16_t   | 2               | 0                             | [プロダクトID](#プロダクトid)
+robot_id       | uint16_t   | 2               | 2                             | [ロボットID](#ロボットid)
+length         | uint16_t   | 2               | 4                             | ヘッダを含む通信データの長さ、72固定
+checksum       | uint16_t   | 2               | 6                             | ボディデータのチェックサム
+
+
+
+#### ボディ
+
 Data Name      | Data Type  | Data Size(byte) | Start Address in PacketBody | Data Description
 ---------------|------------|-----------------|-----------------------------|--------------------
 TARGET_RPM_L   | float      | 4               | 0                           | RPM指令値(左モータ)
@@ -260,10 +272,32 @@ TARGET_RPM_R   | float      | 4               | 4                           | RP
 
 ### Arduinoドライバからの受信データ
 
+#### ヘッダ
+Data Name      | Data Type  | Data Size(byte) | Start Address in PacketHeader | Data Description
+---------------|------------|-----------------|-------------------------------|--------------------
+localPort      | uint16_t   | 2               | 0                             | ローカルポート( `8888`固定 )
+robot_id       | uint16_t   | 2               | 2                             | リモートIP ( `8888` 固定)
+length         | uint16_t   | 2               | 4                             | ヘッダを含む通信データの長さ、72固定
+checksum       | uint16_t   | 2               | 6                             | ボディデータのチェックサム
+
+#### ボディ
+
 Data Name      | Data Type  | Data Size(byte) | Start Address in PacketBody | Data Description
 ---------------|------------|-----------------|-----------------------------|-----------------
 RECV_ENCODER_L | int32      | 4               | 0                           | 左エンコーダのカウント数
 RECV_ENCODER_R | int32      | 4               | 4                           | 右エンコーダのカウント数
+
+### プロダクトID
+CuboRexから販売する製品ごとに、プロダクトIDを設定しています。
+
+| 製品                                           | プロダクトID |
+| ---------------------------------------------- | -----------: |
+| クローラロボット開発プラットフォーム CuGo V3i  | 1            |
+| クローラロボット開発プラットフォーム CuGo V4   | 1            |
+
+### ロボットID
+ロボットを複数台使用する際に、ロボットの識別のために使用する値です。
+現在のバージョンではロボットIDに応じたプログラムは実装していないため、ロボットIDを変えても処理は変わりません。
 
 
 # Note
