@@ -128,6 +128,18 @@ bool Serial::reconnect(const std::string & port, int baudrate)
   }
 }
 
+bool Serial::handshake()
+{
+  std::cout << "[Serial INFO] Handshaking..." << std::endl;
+  if (!serial_port_.is_open()) return false;
+
+  // TODO: ハンドシェイク処理をここに記述する
+  // 例: 通信相手に接続要求を送り、ACKとともにハードウェア情報が保存されていれば確認する
+  
+  std::cout << "[Serial INFO] Handshake done." << std::endl;
+  return true;
+}
+
 void Serial::register_callback(DataCallback callback) {data_callback_ = callback;}
 
 void Serial::start_read()
@@ -239,10 +251,14 @@ std::vector<unsigned char> Serial::create_packet(const SendValue & sv)
   // --- ボディの作成 ---
   // ボディ部分へのポインタを取得
   unsigned char * body_ptr = packet.data() + 8;  // ヘッダ(8バイト)の後ろ
-  // RPM値をボディにコピー
-  memcpy(body_ptr + 0, &sv.l_rpm, sizeof(float));  // ボディの0バイト目から
-  memcpy(body_ptr + 4, &sv.r_rpm, sizeof(float));  // ボディの4バイト目から
-  // 残りのボディは0で初期化済み
+
+  // TODO: Twist(sv.linear_x, sv.linear_y, sv.angular_z) を
+  // 通信相手の仕様に合わせてボディへ書き込む
+  // 現状は 0埋め または 仮の実装とする
+  
+  // (例)
+  // memcpy(body_ptr + 0, &sv.linear_x, sizeof(double));
+  // memcpy(body_ptr + 8, &sv.angular_z, sizeof(double));
 
   // --- ヘッダの作成 ---
   // ヘッダ部分へのポインタを取得
@@ -259,6 +275,20 @@ std::vector<unsigned char> Serial::create_packet(const SendValue & sv)
   memcpy(header_ptr + 6, &checksum, sizeof(uint16_t));
 
   return packet;
+}
+
+ReceiveValue Serial::decode_body(const std::vector<uint8_t> & body_data)
+{
+  ReceiveValue val = {0,0,0.0, 0.0, 0.0};
+  
+  // TODO: body_data (64bytes) から データを復元する
+  
+  // (例)
+  // val.linear_x = bin_to_double(body_data.data() + 0);
+  // val.linear_y = bin_to_double(body_data.data() + 8);
+  // val.angular_z = bin_to_double(body_data.data() + 16);
+  
+  return val;
 }
 
 void Serial::write(const SendValue & sv)

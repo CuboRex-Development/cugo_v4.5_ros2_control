@@ -43,9 +43,20 @@ struct SendValue
 {
   uint16_t product_id;
   uint16_t robot_id;
-  float l_rpm;
-  float r_rpm;
-  // 送信メッセージが増えればここに追加
+
+  double linear_x;
+  double linear_y;
+  double angular_z;
+};
+
+struct ReceiveValue
+{
+  uint16_t product_id;
+  uint16_t robot_id;
+
+  double linear_x;
+  double linear_y;
+  double angular_z;
 };
 
 class Serial
@@ -59,6 +70,9 @@ public:
   void open(const std::string & port, int baudrate);
   void close();
   bool reconnect(const std::string & port, int baudrate);
+  
+  bool handshake();
+
   void start_read();
   void register_callback(DataCallback callback);
   void write(const SendValue & sv);
@@ -68,6 +82,8 @@ public:
   static std::vector<unsigned char> encode(const std::vector<unsigned char> & raw_packet);
   static std::vector<unsigned char> decode(const std::vector<unsigned char> & encoded_packet);
   static uint16_t calc_checksum(const unsigned char * body_data, size_t body_size);
+
+static ReceiveValue decode_body(const std::vector<uint8_t> & body_data);
 
   // バイナリ変換
   static std::vector<unsigned char> float_to_bin(float value);
@@ -83,7 +99,6 @@ public:
   work_guard_;
   std::array<uint8_t, 256> raw_read_buffer_;
   std::vector<uint8_t> packet_buffer_;
-  //boost::asio::streambuf stream_buffer_;
   DataCallback data_callback_;
 
 private:

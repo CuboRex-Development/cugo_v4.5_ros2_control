@@ -58,7 +58,6 @@ private:
   // サブスクライバーとパブリッシャー
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
-  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
   rclcpp::TimerBase::SharedPtr control_timer_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
@@ -74,13 +73,9 @@ private:
   rclcpp::Time last_cmd_vel_time_;
   rclcpp::Time last_serial_receive_time_;
   rclcpp::Time prev_control_loop_time_;
-  //int32_t latest_left_encoder_{0};
-  //int32_t latest_right_encoder_{0};
-  int32_t prev_left_encoder_{0};
-  int32_t prev_right_encoder_{0};
-  bool is_first_serial_data_{true};  // 最初の受信データかどうかのフラグ
-  double left_wheel_angle_{0.0};
-  double right_wheel_angle_{0.0};
+
+  bool is_first_serial_data_{true};
+
 
   // タイマーコールバック
   rclcpp::TimerBase::SharedPtr control_timer;
@@ -96,10 +91,7 @@ private:
   int serial_baudrate;
   double cmd_vel_timeout_;  // /cmd_velのタイムアウト期間
   double serial_timeout_;   // シリアル通信のタイムアウト期間
-  double tread;
-  double l_wheel_radius, r_wheel_radius;
-  double reduction_ratio;
-  int encoder_resolution;
+  
   int product_id;
   int robot_id;
   double pose_cov_x_;
@@ -109,6 +101,7 @@ private:
   double pose_cov_pitch_;
   double pose_cov_yaw_;
   double twist_cov_x_;
+  double twist_cov_y_;
   double twist_cov_yaw_;
 
   std::array<double, 36> pose_covariance_{};

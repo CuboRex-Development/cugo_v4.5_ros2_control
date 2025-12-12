@@ -21,15 +21,10 @@
 namespace cugo_ros2_control2
 {
 
-struct RPM
-{
-  float l_rpm;
-  float r_rpm;
-};
-
 struct Twist
 {
   double linear_x;
+  double linear_y;
   double angular_z;
 };
 
@@ -43,21 +38,13 @@ struct Odom
 class CuGo
 {
 public:
-  CuGo(
-    double config_l_radius, double config_r_radius, double config_tread,
-    double config_reduction_ratio, int config_encoder_resolution);
+  // コンストラクタ引数の物理パラメータを削除
+  CuGo();
 
-  RPM calc_rpm(double linear_x, double angular_z);
-  Twist calc_twist(int count_diff_l, int count_diff_r, double dt);
   Odom calc_odom(Odom odom, Twist twist, double dt);
 
 private:
-  // 物理パラメータのみをメンバ変数として保持
-  double WHEEL_RADIUS_L_;
-  double WHEEL_RADIUS_R_;
-  double TREAD_;
-  double REDUCTION_RATIO_;
-  int ENCODER_RESOLUTION_;
+  // private メンバ
 };
 
 }  // namespace cugo_ros2_control2
