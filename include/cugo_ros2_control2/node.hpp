@@ -33,7 +33,7 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 #include "tf2_ros/transform_broadcaster.h"
-#include "cugo_ros2_control2/cugo_protocol.hpp" // 追加
+#include "cugo_ros2_control2/cugo_protocol.hpp" 
 
 namespace cugo_ros2_control2
 {
@@ -52,7 +52,7 @@ public:
 
 private:
   void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg);
-  void serial_data_callback(const std::vector<unsigned char> & raw_packet); // 引数変更
+  void serial_data_callback(const std::vector<unsigned char> & raw_packet);
   void control_loop();
   void publish_odom_and_tf();
 
@@ -104,7 +104,9 @@ private:
   double twist_cov_y_;
   double twist_cov_yaw_;
 
- 
+  // 現在のYaw角を保持するメンバ変数 (最適化用)
+  double current_yaw_{0.0};
+  
   // ROSでの共有データ
   double linear_x, angular_z;
   nav_msgs::msg::Odometry current_odom_;
