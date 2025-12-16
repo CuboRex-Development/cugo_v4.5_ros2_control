@@ -16,35 +16,25 @@
 
 #ifndef CUGO_ROS2_CONTROL2_CUGO_HPP
 #define CUGO_ROS2_CONTROL2_CUGO_HPP
+#include "cugo_ros2_control2/cugo_protocol.hpp"
 #include <math.h>
 
 namespace cugo_ros2_control2
 {
 
-struct Twist
-{
-  double linear_x;
-  double linear_y;
-  double angular_z;
-};
-
-struct Odom
-{
-  double x;
-  double y;
-  double yaw;
-};
-
 class CuGo
 {
 public:
-  // コンストラクタ引数の物理パラメータを削除
   CuGo();
 
-  Odom calc_odom(Odom odom, Twist twist, double dt);
-
-private:
-  // private メンバ
+  /**
+   * @brief オドメトリ計算
+   * @param current_pose 現在の位置姿勢
+   * @param state ロボットからのフィードバック（速度情報）
+   * @param dt 経過時間 [s]
+   * @return 更新後の位置姿勢
+   */
+  Pose2D calc_odom(const Pose2D& current_pose, const RobotState& state, double dt);
 };
 
 }  // namespace cugo_ros2_control2

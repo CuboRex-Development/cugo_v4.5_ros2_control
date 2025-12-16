@@ -112,6 +112,13 @@ namespace cugo_ros2_control2
      * @brief チェックサム計算 (16bit)
      */
     static uint16_t calc_checksum(const uint8_t *data, size_t size);
+
+  private:
+    // バイナリ変換
+    static std::vector<unsigned char> float_to_bin(float value);
+    static float bin_to_float(const unsigned char * data);
+    static std::vector<unsigned char> int32_to_bin(int32_t value);
+    static int32_t bin_to_int32(const unsigned char * data);
   };
 
 } // namespace cugo_ros2_control2

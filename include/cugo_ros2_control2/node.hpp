@@ -23,7 +23,6 @@
 #include <mutex>
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
 #include <string>
 #include <vector>
 
@@ -32,7 +31,9 @@
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+
 #include "tf2_ros/transform_broadcaster.h"
+#include "cugo_ros2_control2/cugo_protocol.hpp" // 追加
 
 namespace cugo_ros2_control2
 {
@@ -51,14 +52,13 @@ public:
 
 private:
   void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg);
-  void serial_data_callback(const std::vector<unsigned char> & body_data);
+  void serial_data_callback(const std::vector<unsigned char> & raw_packet); // 引数変更
   void control_loop();
   void publish_odom_and_tf();
 
   // サブスクライバーとパブリッシャー
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
-  rclcpp::TimerBase::SharedPtr control_timer_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   // インスタンス
@@ -72,14 +72,12 @@ private:
   geometry_msgs::msg::Twist latest_cmd_vel_;
   rclcpp::Time last_cmd_vel_time_;
   rclcpp::Time last_serial_receive_time_;
-  rclcpp::Time prev_control_loop_time_;
-
+  
   bool is_first_serial_data_{true};
-
+  
 
   // タイマーコールバック
   rclcpp::TimerBase::SharedPtr control_timer;
-  //  rclcpp::TimerBase::SharedPtr check_timeout_timer;
 
   // launchファイルのパラメータ
   std::string odom_frame_id_;
@@ -89,11 +87,13 @@ private:
   double control_frequency;
   std::string serial_port;
   int serial_baudrate;
-  double cmd_vel_timeout_;  // /cmd_velのタイムアウト期間
-  double serial_timeout_;   // シリアル通信のタイムアウト期間
+  double cmd_vel_timeout_;
+  double serial_timeout_;
   
   int product_id;
   int robot_id;
+
+  // 共分散パラメータ
   double pose_cov_x_;
   double pose_cov_y_;
   double pose_cov_z_;
@@ -104,17 +104,10 @@ private:
   double twist_cov_y_;
   double twist_cov_yaw_;
 
-  std::array<double, 36> pose_covariance_{};
-  std::array<double, 36> twist_covariance_{};
-
+ 
   // ROSでの共有データ
   double linear_x, angular_z;
-  rclcpp::Time prev_recvtime_cmdvel = this->get_clock()->now();
-  rclcpp::Time recvtime_cmdvel = prev_recvtime_cmdvel;
-  rclcpp::Time prev_recvtime_serial = this->get_clock()->now();
-  rclcpp::Time recvtime_serial = prev_recvtime_serial;
   nav_msgs::msg::Odometry current_odom_;
-  sensor_msgs::msg::JointState joint_state_;
 };
 
 }  // namespace cugo_ros2_control2

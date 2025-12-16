@@ -26,16 +26,19 @@ CuGo::CuGo()
 
 
 
-Odom CuGo::calc_odom(Odom input_odom, Twist twist, double dt)
+Pose2D CuGo::calc_odom(const Pose2D& current_pose, const RobotState& state, double dt)
 {
-  Odom output_odom;
-  output_odom.yaw = input_odom.yaw + twist.angular_z * dt;
+  Pose2D next_pose;
+  next_pose.yaw = current_pose.yaw + state.angular_z * dt;
 
-  double delta_x = (twist.linear_x * cos(output_odom.yaw) - twist.linear_y * sin(output_odom.yaw)) * dt;
-  double delta_y = (twist.linear_x * sin(output_odom.yaw) + twist.linear_y * cos(output_odom.yaw)) * dt;
+  // 移動量の計算 (単純なオイラー積分)
+  // ロボット座標系での速度(linear_x, linear_y)をワールド座標系へ変換
+  double delta_x = (state.linear_x * std::cos(next_pose.yaw) - state.linear_y * std::sin(next_pose.yaw)) * dt;
+  double delta_y = (state.linear_x * std::sin(next_pose.yaw) + state.linear_y * std::cos(next_pose.yaw)) * dt;
 
-  output_odom.x = input_odom.x + delta_x;
-  output_odom.y = input_odom.y + delta_y;
+  // 位置の更新
+  next_pose.x = current_pose.x + delta_x;
+  next_pose.y = current_pose.y + delta_y;
 
-  return output_odom;
+  return next_pose;
 }

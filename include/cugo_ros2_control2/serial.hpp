@@ -32,32 +32,8 @@
 #include <vector>
 #include <optional>
 
-#define PACKET_SIZE 72
-#define PACKET_HEADER_SIZE 8
-#define PACKET_BODY_SIZE 64
-
 namespace cugo_ros2_control2
 {
-
-struct SendValue
-{
-  uint16_t product_id;
-  uint16_t robot_id;
-
-  double linear_x;
-  double linear_y;
-  double angular_z;
-};
-
-struct ReceiveValue
-{
-  uint16_t product_id;
-  uint16_t robot_id;
-
-  double linear_x;
-  double linear_y;
-  double angular_z;
-};
 
 class Serial
 {
@@ -67,6 +43,7 @@ public:
 
   Serial();
   ~Serial();
+
   void open(const std::string & port, int baudrate);
   void close();
   bool reconnect(const std::string & port, int baudrate);
@@ -75,32 +52,20 @@ public:
 
   void start_read();
   void register_callback(DataCallback callback);
-  void write(const SendValue & sv);
+  
+  // 送信メソッド: 既にエンコード済みのバイト列を受け取る
+  void write(const std::vector<uint8_t> & data);
 
-  // パケット関連メソッド
-  static std::vector<unsigned char> create_packet(const SendValue & sv);
-  static std::vector<unsigned char> encode(const std::vector<unsigned char> & raw_packet);
-  static std::vector<unsigned char> decode(const std::vector<unsigned char> & encoded_packet);
-  static uint16_t calc_checksum(const unsigned char * body_data, size_t body_size);
 
-static ReceiveValue decode_body(const std::vector<uint8_t> & body_data);
-
-  // バイナリ変換
-  static std::vector<unsigned char> float_to_bin(float value);
-  static float bin_to_float(const unsigned char * data);
-  static std::vector<unsigned char> int32_to_bin(int32_t value);
-  static int32_t bin_to_int32(const unsigned char * data);
-
-  // boostライブラリ
   boost::asio::io_context io_context_;
   boost::asio::serial_port serial_port_;
   std::thread io_thread_;
-  std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
-  work_guard_;
+  std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_guard_;
+  
   std::array<uint8_t, 256> raw_read_buffer_;
   std::vector<uint8_t> packet_buffer_;
   DataCallback data_callback_;
-
+  
 private:
   void handle_read(const boost::system::error_code & error, std::size_t bytes_transferred);
   void handle_write(const boost::system::error_code & error, std::size_t bytes_transferred);

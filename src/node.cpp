@@ -33,6 +33,9 @@ Node::Node()
   this->declare_parameter("cmd_vel_timeout", 0.5);  // 秒
   this->declare_parameter("serial_timeout", 0.5);   // 秒
   this->declare_parameter("product_id", 0);
+  this->declare_parameter("robot_id", 0);
+
+  // 共分散
   this->declare_parameter("pose_cov_x", 0.05);
   this->declare_parameter("pose_cov_y", 0.05);
   this->declare_parameter("pose_cov_z", 1e9);
@@ -53,6 +56,8 @@ Node::Node()
   this->get_parameter("cmd_vel_timeout", cmd_vel_timeout_);
   this->get_parameter("serial_timeout", serial_timeout_);
   this->get_parameter("product_id", product_id);
+  this->get_parameter("robot_id", robot_id);
+  
   this->get_parameter("pose_cov_x", pose_cov_x_);
   this->get_parameter("pose_cov_y", pose_cov_y_);
   this->get_parameter("pose_cov_z", pose_cov_z_);
@@ -74,6 +79,8 @@ Node::Node()
   RCLCPP_INFO(this->get_logger(), "cmd_vel_timeout: %f", cmd_vel_timeout_);
   RCLCPP_INFO(this->get_logger(), "serial_timeout: %f", serial_timeout_);
   RCLCPP_DEBUG(this->get_logger(), "product_id: %d", product_id);
+  RCLCPP_DEBUG(this->get_logger(), "robot_id: %d", robot_id);
+
 
   // 各クラスの初期化
   cugo_ = std::make_unique<cugo_ros2_control2::CuGo>();
@@ -83,7 +90,7 @@ Node::Node()
   try {
     serial_->open(serial_port, serial_baudrate);
     
-    // 追加: ハンドシェイク
+    // ハンドシェイク
     if (!serial_->handshake()) {
        RCLCPP_WARN(this->get_logger(), "Handshake failed or ignored.");
     }
@@ -101,7 +108,6 @@ Node::Node()
   auto now = this->get_clock()->now();
   last_cmd_vel_time_ = now;
   last_serial_receive_time_ = now;
-  prev_control_loop_time_ = now;
   current_odom_.header.frame_id = odom_frame_id_;
   current_odom_.child_frame_id = base_link_frame_id_;
 
@@ -132,23 +138,29 @@ void Node::cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
 }
 
 // シリアルデータ受信時のコールバック (Serialクラスから呼ばれる)
-void Node::serial_data_callback(const std::vector<unsigned char> & body_data)
+void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
 {
   RCLCPP_DEBUG(this->get_logger(), "serial_data_callback()");
   rclcpp::Time current_receive_time = this->get_clock()->now();
 
-  // 1. ボディデータから通信用構造体(ReceiveValue)を取得
-  cugo_ros2_control2::ReceiveValue recv_val = cugo_ros2_control2::Serial::decode_body(body_data);
-  cugo_ros2_control2::Twist current_twist;
-  current_twist.linear_x = recv_val.linear_x;
-  current_twist.linear_y = recv_val.linear_y;
-  current_twist.angular_z = recv_val.angular_z;
+  // 1. プロトコルデコード (deserialize)
+  RobotState state;
+  std::string error_msg;
+  bool success = CugoProtocol::deserialize(raw_packet, state, error_msg);
   
-  // ログ出力
-  RCLCPP_INFO(
-    this->get_logger(), "Received: Vx=%lf, Vy=%lf, Omega z=%lf", 
-    recv_val.linear_x, recv_val.linear_y, recv_val.angular_z);
-  
+
+  if (!success) {
+    // 失敗時はWARNログを出して終了（頻発防止のためThrottle使用）
+    RCLCPP_WARN_THROTTLE(
+      this->get_logger(), *this->get_clock(), 1000, 
+      "Packet Decode Error: %s", error_msg.c_str());
+    return;
+  } else {
+    RCLCPP_INFO(
+      this->get_logger(), "Received: Vx=%lf, Vy=%lf, Omega z=%lf", 
+      state.linear_x, state.linear_y, state.angular_z);
+  }
+
     // 2. 状態を更新（Mutexで保護）
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -167,31 +179,33 @@ void Node::serial_data_callback(const std::vector<unsigned char> & body_data)
       return;
     }
 
-
-    // 現在のオドメトリ情報を一時的な構造体にコピー
-    cugo_ros2_control2::Odom current_odom_state;
-    current_odom_state.x = current_odom_.pose.pose.position.x;
-    current_odom_state.y = current_odom_.pose.pose.position.y;
+    // 現在のオドメトリを Pose2D に変換
+    Pose2D current_pose;
+    current_pose.x = current_odom_.pose.pose.position.x;
+    current_pose.y = current_odom_.pose.pose.position.y;
+    
     tf2::Quaternion q(
-      current_odom_.pose.pose.orientation.x, current_odom_.pose.pose.orientation.y,
-      current_odom_.pose.pose.orientation.z, current_odom_.pose.pose.orientation.w);
+      current_odom_.pose.pose.orientation.x, 
+      current_odom_.pose.pose.orientation.y,
+      current_odom_.pose.pose.orientation.z, 
+      current_odom_.pose.pose.orientation.w);
     tf2::Matrix3x3 m(q);
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
-    current_odom_state.yaw = yaw;
+    current_pose.yaw = yaw;
 
-    // オドメトリ更新 (速度から積分)
-    auto updated_odom_state = cugo_->calc_odom(current_odom_state, current_twist, dt);
+    // オドメトリ計算 (cugo_)
+    Pose2D next_pose = cugo_->calc_odom(current_pose, state, dt);
 
-    // 計算結果をメンバ変数に反映
-    current_odom_.pose.pose.position.x = updated_odom_state.x;
-    current_odom_.pose.pose.position.y = updated_odom_state.y;
-    current_odom_.twist.twist.linear.x = current_twist.linear_x;
-    current_odom_.twist.twist.linear.y = current_twist.linear_y;
-    current_odom_.twist.twist.angular.z = current_twist.angular_z;
-
+    // 結果を反映
+    current_odom_.pose.pose.position.x = next_pose.x;
+    current_odom_.pose.pose.position.y = next_pose.y;
+    current_odom_.twist.twist.linear.x = state.linear_x;
+    current_odom_.twist.twist.linear.y = state.linear_y;
+    current_odom_.twist.twist.angular.z = state.angular_z;
+    
     tf2::Quaternion q_new;
-    q_new.setRPY(0, 0, updated_odom_state.yaw);
+    q_new.setRPY(0, 0, next_pose.yaw);
     current_odom_.pose.pose.orientation = tf2::toMsg(q_new);
 
     // 共分散を反映
@@ -232,23 +246,31 @@ void Node::control_loop()
 
   auto now = this->get_clock()->now();
 
-  // --- 送信処理 ---
-  cugo_ros2_control2::SendValue sv;
-  sv.product_id = product_id;
-  sv.robot_id = robot_id;
+  // 1. 送信データの作成
+  ControlCommand cmd;
+  cmd.product_id = static_cast<uint16_t>(product_id);
+  cmd.robot_id = static_cast<uint16_t>(robot_id);
 
   if ((now - local_last_cmd_vel_time).seconds() > cmd_vel_timeout_) {
-    sv.linear_x = 0.0;
-    sv.linear_y = 0.0;
-    sv.angular_z = 0.0;
+    cmd.linear_x = 0.0;
+    cmd.linear_y = 0.0;
+    cmd.angular_z = 0.0;
   } else {
     // Twistをそのまま送信データに入れる
-    sv.linear_x = local_cmd_vel.linear.x;
-    sv.linear_y = local_cmd_vel.linear.y;
-    sv.angular_z = local_cmd_vel.angular.z;
+    cmd.linear_x = local_cmd_vel.linear.x;
+    cmd.linear_y = local_cmd_vel.linear.y;
+    cmd.angular_z = local_cmd_vel.angular.z;
   }
+
+  // 2. プロトコルエンコード (serialize)
+  std::vector<uint8_t> packet = CugoProtocol::serialize(cmd);
   
-  serial_->write(sv);
+  if (packet.empty()) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to serialize command packet.");
+  } else {
+    // 3. 送信
+    serial_->write(packet);
+  }
 
   // --- シリアルタイムアウト監視 ---
   bool is_serial_timeout = (now - local_last_serial_receive_time).seconds() > serial_timeout_;
