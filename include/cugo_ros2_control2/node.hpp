@@ -90,26 +90,8 @@ private:
   double cmd_vel_timeout_;
   double serial_timeout_;
   
-  int product_id;
-  int robot_id;
-
-  // 共分散パラメータ
-  double pose_cov_x_;
-  double pose_cov_y_;
-  double pose_cov_z_;
-  double pose_cov_roll_;
-  double pose_cov_pitch_;
-  double pose_cov_yaw_;
-  double twist_cov_x_;
-  double twist_cov_y_;
-  double twist_cov_yaw_;
-
-  // 現在のYaw角を保持するメンバ変数 (最適化用)
-  double current_yaw_{0.0};
-  
-  // ROSでの共有データ
-  double linear_x, angular_z;
-  nav_msgs::msg::Odometry current_odom_;
+  // 送信用メッセージバッファ
+  nav_msgs::msg::Odometry odom_msg_;
 };
 
 }  // namespace cugo_ros2_control2

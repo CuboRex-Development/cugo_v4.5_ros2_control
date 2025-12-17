@@ -17,7 +17,9 @@
 #ifndef CUGO_ROS2_CONTROL2_CUGO_HPP
 #define CUGO_ROS2_CONTROL2_CUGO_HPP
 #include "cugo_ros2_control2/cugo_protocol.hpp"
-#include <math.h>
+#include <cmath>
+#include <array>
+#include <vector>
 
 namespace cugo_ros2_control2
 {
@@ -27,15 +29,38 @@ class CuGo
 public:
   CuGo();
 
-  /**
-   * @brief オドメトリ計算
-   * @param current_pose 現在の位置姿勢
-   * @param state ロボットからのフィードバック（速度情報）
-   * @param dt 経過時間 [s]
-   * @return 更新後の位置姿勢
-   */
-  Pose2D calc_odom(const Pose2D& current_pose, const RobotState& state, double dt);
+  // --- 設定系 ---
+  // ロボットID設定
+  void set_identity(uint16_t product_id, uint16_t robot_id);
+  // 共分散設定
+  void set_covariance(const std::array<double, 36>& pose_cov, const std::array<double, 36>& twist_cov);
+
+  // --- 更新・計算系 ---
+  // 状態更新 (物理計算)
+  void update_state(const RobotState& state, double dt);
+  
+  // 指令生成 (Protocolを使ってバイト列を作成)
+  std::vector<uint8_t> create_command_packet(double linear_x, double linear_y, double angular_z);
+
+  // --- ゲッター ---
+  Pose2D get_pose() const;
+  RobotState get_state() const;
+  const std::array<double, 36>& get_pose_covariance() const;
+  const std::array<double, 36>& get_twist_covariance() const;
+
+private:
+  // ロボットID
+  uint16_t product_id_{0};
+  uint16_t robot_id_{0};
+
+  // 内部状態
+  Pose2D current_pose_;
+  RobotState current_state_;
+
+  // パラメータ
+  std::array<double, 36> pose_covariance_;
+  std::array<double, 36> twist_covariance_;
 };
 
 }  // namespace cugo_ros2_control2
-#endif  // CUGO_ROS2_CONTROL2_CUGO_HPP
+#endif

@@ -16,29 +16,75 @@
 
 #include "cugo_ros2_control2/cugo.hpp"
 
-#include <iostream>
-
-using namespace cugo_ros2_control2;
+namespace cugo_ros2_control2
+{
 
 CuGo::CuGo()
 {
+  current_pose_ = {0.0, 0.0, 0.0};
+  current_state_ = {0, 0, 0.0, 0.0, 0.0};
+  pose_covariance_.fill(0.0);
+  twist_covariance_.fill(0.0);
 }
 
-
-
-Pose2D CuGo::calc_odom(const Pose2D& current_pose, const RobotState& state, double dt)
+void CuGo::set_identity(uint16_t product_id, uint16_t robot_id)
 {
-  Pose2D next_pose;
-  next_pose.yaw = current_pose.yaw + state.angular_z * dt;
-
-  // 移動量の計算 (単純なオイラー積分)
-  // ロボット座標系での速度(linear_x, linear_y)をワールド座標系へ変換
-  double delta_x = (state.linear_x * std::cos(next_pose.yaw) - state.linear_y * std::sin(next_pose.yaw)) * dt;
-  double delta_y = (state.linear_x * std::sin(next_pose.yaw) + state.linear_y * std::cos(next_pose.yaw)) * dt;
-
-  // 位置の更新
-  next_pose.x = current_pose.x + delta_x;
-  next_pose.y = current_pose.y + delta_y;
-
-  return next_pose;
+  product_id_ = product_id;
+  robot_id_ = robot_id;
 }
+
+void CuGo::set_covariance(const std::array<double, 36>& pose_cov, const std::array<double, 36>& twist_cov)
+{
+  pose_covariance_ = pose_cov;
+  twist_covariance_ = twist_cov;
+}
+
+void CuGo::update_state(const RobotState& state, double dt)
+{
+  // 速度情報の保存
+  current_state_ = state;
+
+  // オドメトリ計算 (単純なオイラー積分)
+  double next_yaw = current_pose_.yaw + state.angular_z * dt;
+  double delta_x = (state.linear_x * std::cos(next_yaw) - state.linear_y * std::sin(next_yaw)) * dt;
+  double delta_y = (state.linear_x * std::sin(next_yaw) + state.linear_y * std::cos(next_yaw)) * dt;
+
+  current_pose_.x += delta_x;
+  current_pose_.y += delta_y;
+  current_pose_.yaw = next_yaw;
+}
+
+std::vector<uint8_t> CuGo::create_command_packet(double linear_x, double linear_y, double angular_z)
+{
+  ControlCommand cmd;
+  cmd.product_id = product_id_; // 保存しているIDを使用
+  cmd.robot_id = robot_id_;
+  cmd.linear_x = linear_x;
+  cmd.linear_y = linear_y;
+  cmd.angular_z = angular_z;
+
+  // Protocolに処理を委譲
+  return CugoProtocol::serialize(cmd);
+}
+
+Pose2D CuGo::get_pose() const
+{
+  return current_pose_;
+}
+
+RobotState CuGo::get_state() const
+{
+  return current_state_;
+}
+
+const std::array<double, 36>& CuGo::get_pose_covariance() const
+{
+  return pose_covariance_;
+}
+
+const std::array<double, 36>& CuGo::get_twist_covariance() const
+{
+  return twist_covariance_;
+}
+
+} // namespace cugo_ros2_control2

@@ -18,8 +18,16 @@
 
 using namespace cugo_ros2_control2;
 Node::Node()
-    : rclcpp::Node("cugo_ros2_control2")
+: rclcpp::Node("cugo_ros2_control2")
 {
+  // 設定用の一時変数定義
+  int pid, rid;
+  // std::array は宣言時に初期化
+  std::array<double, 36> pose_cov = {0};
+  std::array<double, 36> twist_cov = {0};
+  double px, py, pz, pr, pp, pyaw;
+  double tx, ty, tyaw;
+
   RCLCPP_INFO(this->get_logger(), "cugo_ros2_control2 has started.");
 
   // launchファイルからパラメータを取得
@@ -34,7 +42,7 @@ Node::Node()
   this->declare_parameter("serial_timeout", 0.5);   // 秒
   this->declare_parameter("product_id", 0);
   this->declare_parameter("robot_id", 0);
-
+  
   // 共分散
   this->declare_parameter("pose_cov_x", 0.05);
   this->declare_parameter("pose_cov_y", 0.05);
@@ -55,18 +63,18 @@ Node::Node()
   this->get_parameter("serial_baudrate", serial_baudrate);
   this->get_parameter("cmd_vel_timeout", cmd_vel_timeout_);
   this->get_parameter("serial_timeout", serial_timeout_);
-  this->get_parameter("product_id", product_id);
-  this->get_parameter("robot_id", robot_id);
+  this->get_parameter("product_id", pid);
+  this->get_parameter("robot_id", rid);
 
-  this->get_parameter("pose_cov_x", pose_cov_x_);
-  this->get_parameter("pose_cov_y", pose_cov_y_);
-  this->get_parameter("pose_cov_z", pose_cov_z_);
-  this->get_parameter("pose_cov_roll", pose_cov_roll_);
-  this->get_parameter("pose_cov_pitch", pose_cov_pitch_);
-  this->get_parameter("pose_cov_yaw", pose_cov_yaw_);
-  this->get_parameter("twist_cov_linear_x", twist_cov_x_);
-  this->get_parameter("twist_cov_linear_y", twist_cov_y_);
-  this->get_parameter("twist_cov_angular_z", twist_cov_yaw_);
+  this->get_parameter("pose_cov_x", px);
+  this->get_parameter("pose_cov_y", py);
+  this->get_parameter("pose_cov_z", pz);
+  this->get_parameter("pose_cov_roll", pr);
+  this->get_parameter("pose_cov_pitch", pp);
+  this->get_parameter("pose_cov_yaw", pyaw);
+  this->get_parameter("twist_cov_linear_x", tx);
+  this->get_parameter("twist_cov_linear_y", ty);
+  this->get_parameter("twist_cov_angular_z", tyaw);
 
   RCLCPP_INFO(this->get_logger(), "設定パラメータ");
   RCLCPP_INFO(this->get_logger(), "odom_frame_id: %s", odom_frame_id_.c_str());
@@ -78,13 +86,20 @@ Node::Node()
   RCLCPP_INFO(this->get_logger(), "serial_baudrate: %d", serial_baudrate);
   RCLCPP_INFO(this->get_logger(), "cmd_vel_timeout: %f", cmd_vel_timeout_);
   RCLCPP_INFO(this->get_logger(), "serial_timeout: %f", serial_timeout_);
-  RCLCPP_DEBUG(this->get_logger(), "product_id: %d", product_id);
-  RCLCPP_DEBUG(this->get_logger(), "robot_id: %d", robot_id);
+  RCLCPP_DEBUG(this->get_logger(), "product_id: %d", pid);
+  RCLCPP_DEBUG(this->get_logger(), "robot_id: %d", rid);
 
-
+  
   // 各クラスの初期化
-  cugo_ = std::make_unique<cugo_ros2_control2::CuGo>();
-  serial_ = std::make_shared<cugo_ros2_control2::Serial>();
+  cugo_ = std::make_unique<CuGo>();
+  serial_ = std::make_shared<Serial>();
+
+  // CuGoセットアップ
+  pose_cov[0] = px; pose_cov[7] = py; pose_cov[14] = pz; pose_cov[21] = pr; pose_cov[28] = pp; pose_cov[35] = pyaw;
+  twist_cov[0] = tx; twist_cov[7] = ty; twist_cov[35] = tyaw;
+
+  cugo_->set_identity(static_cast<uint16_t>(pid), static_cast<uint16_t>(rid));
+  cugo_->set_covariance(pose_cov, twist_cov);
 
   // Serial通信の開始
   try
@@ -112,9 +127,10 @@ Node::Node()
   auto now = this->get_clock()->now();
   last_cmd_vel_time_ = now;
   last_serial_receive_time_ = now;
-  current_odom_.header.frame_id = odom_frame_id_;
-  current_odom_.child_frame_id = base_link_frame_id_;
-  current_yaw_ = 0.0; // Yaw初期化
+  
+  // メッセージの固定値を初期化
+  odom_msg_.header.frame_id = odom_frame_id_;
+  odom_msg_.child_frame_id = base_link_frame_id_;
 
   // ROS トピック通信
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -125,8 +141,8 @@ Node::Node()
 
   // ループ処理の開始
   control_timer = this->create_wall_timer(
-      std::chrono::milliseconds(static_cast<int>(1000.0 / control_frequency)),
-      std::bind(&Node::control_loop, this));
+    std::chrono::milliseconds(static_cast<int>(1000.0 / control_frequency)),
+    std::bind(&Node::control_loop, this));
 }
 
 void Node::cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
@@ -189,47 +205,16 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
       return;
     }
 
-    // 現在のオドメトリを Pose2D に変換
-    Pose2D current_pose;
-    current_pose.x = current_odom_.pose.pose.position.x;
-    current_pose.y = current_odom_.pose.pose.position.y;
+    // ★ 状態更新はCuGoに依頼 (ロック内で行う)
+    cugo_->update_state(state, dt);
 
-    current_pose.yaw = current_yaw_;
-
-    // オドメトリ計算 (cugo_)
-    Pose2D next_pose = cugo_->calc_odom(current_pose, state, dt);
-
-    // 計算後のYaw角をメンバ変数に更新
-    current_yaw_ = next_pose.yaw;
-
-    // 結果を反映
-    current_odom_.pose.pose.position.x = next_pose.x;
-    current_odom_.pose.pose.position.y = next_pose.y;
-    current_odom_.twist.twist.linear.x = state.linear_x;
-    current_odom_.twist.twist.linear.y = state.linear_y;
-    current_odom_.twist.twist.angular.z = state.angular_z;
-
-    // Yaw角からクォータニオンを作成
-    tf2::Quaternion q_new;
-    q_new.setRPY(0, 0, current_yaw_);
-    current_odom_.pose.pose.orientation = tf2::toMsg(q_new);
-
-    // 共分散を反映
-    current_odom_.pose.covariance[0] = pose_cov_x_;
-    current_odom_.pose.covariance[7] = pose_cov_y_;
-    current_odom_.pose.covariance[14] = pose_cov_z_;
-    current_odom_.pose.covariance[21] = pose_cov_roll_;
-    current_odom_.pose.covariance[28] = pose_cov_pitch_;
-    current_odom_.pose.covariance[35] = pose_cov_yaw_;
-    current_odom_.twist.covariance[0] = twist_cov_x_;
-    current_odom_.twist.covariance[7] = twist_cov_y_;
-    current_odom_.twist.covariance[35] = twist_cov_yaw_;
-
-    //　受信時間の保存
+    // 受信時間の保存
     last_serial_receive_time_ = current_receive_time;
   }
 
   // 3. 計算したオドメトリとTFを発行
+  // publish_odom_and_tf内でもロックを取得するため、ここでは一旦ロックを開放してから呼ぶ
+  // （cugo_の状態はupdate_stateで更新済み）
   publish_odom_and_tf();
   RCLCPP_DEBUG(this->get_logger(), "serial_data_callback() published");
 }
@@ -251,28 +236,24 @@ void Node::control_loop()
   }
 
   auto now = this->get_clock()->now();
-
-  // 1. 送信データの作成
-  ControlCommand cmd;
-  cmd.product_id = static_cast<uint16_t>(product_id);
-  cmd.robot_id = static_cast<uint16_t>(robot_id);
+  double vx = local_cmd_vel.linear.x;
+  double vy = local_cmd_vel.linear.y;
+  double wz = local_cmd_vel.angular.z;
 
   if ((now - local_last_cmd_vel_time).seconds() > cmd_vel_timeout_)
   {
-    cmd.linear_x = 0.0;
-    cmd.linear_y = 0.0;
-    cmd.angular_z = 0.0;
-  }
-  else
-  {
-    // Twistをそのまま送信データに入れる
-    cmd.linear_x = local_cmd_vel.linear.x;
-    cmd.linear_y = local_cmd_vel.linear.y;
-    cmd.angular_z = local_cmd_vel.angular.z;
+    vx = 0.0;
+    vy = 0.0;
+    wz = 0.0;
   }
 
-  // 2. プロトコルエンコード (serialize)
-  std::vector<uint8_t> packet = CugoProtocol::serialize(cmd);
+  // create_command_packetはconstメソッド相当だが、安全のためcugoアクセスとしてロック推奨
+  // ただし頻度が低いパラメータ(ID)参照のみならロックなしでも動くが、設計の一貫性のためにロック
+  std::vector<uint8_t> packet;
+  {
+      std::lock_guard<std::mutex> lock(data_mutex_);
+      packet = cugo_->create_command_packet(vx, vy, wz);
+  }
 
   if (packet.empty())
   {
@@ -305,12 +286,11 @@ void Node::control_loop()
       RCLCPP_INFO(this->get_logger(), "Trying to reconnect...");
       try
       {
-        serial_->reconnect(serial_port, serial_baudrate);
-
-        RCLCPP_INFO(this->get_logger(), "Reconnect successful!");
-        connection_state_ = ConnectionState::CONNECTED;
-        is_first_serial_data_ = true;
+        if (serial_->reconnect(serial_port, serial_baudrate))
         {
+          RCLCPP_INFO(this->get_logger(), "Reconnect successful!");
+          connection_state_ = ConnectionState::CONNECTED;
+          is_first_serial_data_ = true;
           std::lock_guard<std::mutex> lock(data_mutex_);
           last_serial_receive_time_ = now;
         }
@@ -323,23 +303,30 @@ void Node::control_loop()
     }
   }
 
+  // 通信切断時の処理 (タイムアウト時)
   if (connection_state_ != ConnectionState::CONNECTED)
   {
     RCLCPP_WARN(this->get_logger(), "シリアル通信未達。接続を確認してください。");
     // Picoが機能不全の可能性。速度ゼロのオドメトリを発行して異常を知らせる。
     std::lock_guard<std::mutex> lock(data_mutex_);
-    RCLCPP_DEBUG(this->get_logger(), "速度０共分散無限大を入力");
-    current_odom_.twist.twist.linear.x = 0.0;
-    current_odom_.twist.twist.angular.z = 0.0;
-    // 共分散を大きく設定。通信失敗時にオドメトリの信頼度を著しく下げる
-    current_odom_.pose.covariance[0] = 1e9;
-    current_odom_.pose.covariance[7] = 1e9;
-    current_odom_.pose.covariance[14] = 1e9;
-    current_odom_.pose.covariance[21] = 1e9;
-    current_odom_.pose.covariance[28] = 1e9;
-    current_odom_.pose.covariance[35] = 1e9;
-    current_odom_.twist.covariance[0] = 1e9;
-    current_odom_.twist.covariance[35] = 1e9;
+    RCLCPP_DEBUG(this->get_logger(), "速度0,共分散1e9を入力");
+
+    
+    // 速度を0にする
+    odom_msg_.twist.twist.linear.x = 0.0;
+    odom_msg_.twist.twist.linear.y = 0.0;
+    odom_msg_.twist.twist.angular.z = 0.0;
+    
+    // 共分散を非常に大きな値に設定 (1e9)
+    odom_msg_.pose.covariance.fill(1e9);
+    odom_msg_.twist.covariance.fill(1e9);
+
+    // タイムスタンプ更新
+    odom_msg_.header.stamp = now;
+
+    // パブリッシュ
+    odom_pub_->publish(odom_msg_);
+    
 
     publish_odom_and_tf();  // 既に止まっている位置情報と速度ゼロを定期的に発行
     RCLCPP_DEBUG(this->get_logger(), "control_loop() zero /cmd_vel published");
@@ -351,34 +338,53 @@ void Node::publish_odom_and_tf()
 {
   rclcpp::Time now = this->get_clock()->now();
 
-  // TF送信用 TransformStamped メッセージの作成
-  geometry_msgs::msg::TransformStamped t;
-  t.header.stamp = now;
-  t.header.frame_id = odom_frame_id_;
-  t.child_frame_id = base_link_frame_id_;
+  Pose2D pose;
+  RobotState state;
+  
+  // cugo_ へのアクセスと odom_msg_ の更新は Mutex で保護
+  {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    
+    // ★ 現在の状態をCuGoから取得
+    pose = cugo_->get_pose();
+    state = cugo_->get_state();
+    
+    // ★ 共分散をCuGoから復元 (通信断時に上書きされた値を正常値に戻す)
+    odom_msg_.pose.covariance = cugo_->get_pose_covariance();
+    odom_msg_.twist.covariance = cugo_->get_twist_covariance();
 
-  // OdometryメッセージのPose情報をそのまま使う
-  t.transform.translation.x = current_odom_.pose.pose.position.x;
-  t.transform.translation.y = current_odom_.pose.pose.position.y;
-  t.transform.translation.z = 0.0;
-  t.transform.rotation = current_odom_.pose.pose.orientation;
-  tf_broadcaster_->sendTransform(t);
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = now;
+    t.header.frame_id = odom_frame_id_;
+    t.child_frame_id = base_link_frame_id_;
 
-  // Odometryメッセージのヘッダを更新して発行
-  current_odom_.header.stamp = now;
-  odom_pub_->publish(current_odom_);
+    // OdometryメッセージのPose情報をそのまま使う
+    t.transform.translation.x = pose.x;
+    t.transform.translation.y = pose.y;
+    t.transform.translation.z = 0.0;
+    
+    tf2::Quaternion q;
+    q.setRPY(0, 0, pose.yaw);
+    t.transform.rotation = tf2::toMsg(q);
+    tf_broadcaster_->sendTransform(t);
 
-  // デバッグログ用にYawを取得（※ここはロギング用なので計算コストは許容）
-  tf2::Quaternion q(
-      current_odom_.pose.pose.orientation.x, current_odom_.pose.pose.orientation.y,
-      current_odom_.pose.pose.orientation.z, current_odom_.pose.pose.orientation.w);
-  double roll, pitch, yaw;
-  tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    odom_msg_.header.stamp = now;
+    odom_msg_.pose.pose.position.x = pose.x;
+    odom_msg_.pose.pose.position.y = pose.y;
+    odom_msg_.pose.pose.orientation = t.transform.rotation;
+    
+    odom_msg_.twist.twist.linear.x = state.linear_x;
+    odom_msg_.twist.twist.linear.y = state.linear_y;
+    odom_msg_.twist.twist.angular.z = state.angular_z;
 
-  RCLCPP_INFO(
-      this->get_logger(), "Odometry: X=%lf, Y=%lf, Orientation=%lf",
-      current_odom_.pose.pose.position.x, current_odom_.pose.pose.position.y, yaw);
-  RCLCPP_INFO(
-      this->get_logger(), "Velocity: Linear=%lf, Angular=%lf", current_odom_.twist.twist.linear.x,
-      current_odom_.twist.twist.angular.z);
+    odom_pub_->publish(odom_msg_);
+  } // Mutex release
+
+  // デバッグログ (ローカル変数 pose/state を使用してアクセス違反を回避)
+  RCLCPP_DEBUG(
+      this->get_logger(), "Odometry: X=%lf, Y=%lf, Yaw=%lf",
+      pose.x, pose.y, pose.yaw);
+  RCLCPP_DEBUG(
+      this->get_logger(), "Velocity: Linear=%lf, Angular=%lf", 
+      state.linear_x, state.angular_z);
 }
