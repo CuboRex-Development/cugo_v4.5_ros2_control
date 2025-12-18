@@ -21,6 +21,7 @@ Node::Node()
 : rclcpp::Node("cugo_ros2_control2")
 {
   // 設定用の一時変数定義
+  double control_frequency;
   int pid, rid;
   // std::array は宣言時に初期化
   std::array<double, 36> pose_cov = {0};
@@ -54,6 +55,7 @@ Node::Node()
   this->declare_parameter("twist_cov_linear_y", 0.001);
   this->declare_parameter("twist_cov_angular_z", 0.001);
 
+  // パラメータ取得
   this->get_parameter("odom_frame_id", odom_frame_id_);
   this->get_parameter("base_link_frame_id", base_link_frame_id_);
   this->get_parameter("subscribe_topic_name", subscribe_topic_name);
@@ -92,7 +94,8 @@ Node::Node()
   
   // 各クラスの初期化
   cugo_ = std::make_unique<CuGo>();
-  serial_ = std::make_shared<Serial>();
+  // Serialの初期化 (デリミタ0x00を指定)
+  serial_ = std::make_shared<Serial>(0x00);
 
   // CuGoセットアップ
   pose_cov[0] = px; pose_cov[7] = py; pose_cov[14] = pz; pose_cov[21] = pr; pose_cov[28] = pp; pose_cov[35] = pyaw;

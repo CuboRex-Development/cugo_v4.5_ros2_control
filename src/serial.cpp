@@ -19,8 +19,8 @@
 namespace cugo_ros2_control2
 {
 
-Serial::Serial()
-: serial_port_(io_context_)
+Serial::Serial(uint8_t delimiter)
+: delimiter_(delimiter),serial_port_(io_context_)
 {
   work_guard_.emplace(boost::asio::make_work_guard(io_context_.get_executor()));
   io_thread_ = std::thread([this]() { 
@@ -28,7 +28,8 @@ Serial::Serial()
       io_context_.run(); 
     } catch (...) {}
   });
-  std::cout << "[Serial INFO] Serial object created." << std::endl;
+  std::cout << "[Serial INFO] Serial object created with delimiter: " 
+            << static_cast<int>(delimiter_) << std::endl;
 }
 
 Serial::~Serial()
@@ -100,18 +101,14 @@ void Serial::close()
   if (serial_port_.is_open()) {
     boost::system::error_code ec;
     serial_port_.close(ec);
-    if (ec) {
-      std::cerr << "[Serial ERROR] Error closing serial port: " << ec.message() << std::endl;
-    } else {
-      std::cout << "[Serial INFO] Serial port closed." << std::endl;
-    }
+    if (ec) std::cerr << "[Serial ERROR] Error closing: " << ec.message() << std::endl;
   }
 }
 
 bool Serial::reconnect(const std::string & port, int baudrate)
 {
-  std::cout << "[Serial INFO] Attempting to reconnect to " << port << "..." << std::endl;
-  close(); // 既存のポートを確実に閉じる
+  std::cout << "[Serial INFO] Reconnecting..." << std::endl;
+  close();
 
   // io_contextを再利用可能な状態に戻す
   if (io_context_.stopped()) {
@@ -142,6 +139,11 @@ bool Serial::handshake()
   return true;
 }
 
+bool Serial::is_open() const
+{
+  return serial_port_.is_open();
+}
+
 void Serial::register_callback(DataCallback callback)
 {
   data_callback_ = callback;
@@ -170,15 +172,14 @@ void Serial::handle_read(const boost::system::error_code & error, std::size_t by
     return;  // エラー時はループを継続しない
   }
 
-  // --- 2. 受信データをパケット組み立て用バッファ(packet_buffer_)に追加 ---
   if (bytes_transferred > 0) {
     packet_buffer_.insert(packet_buffer_.end(), raw_read_buffer_.begin(), raw_read_buffer_.begin() + bytes_transferred);
   }
 
   // --- 3. バッファからパケットを探索・処理するループ ---
   while (true) {
-    // デリミタ(0x00)をバッファの先頭から探す
-    auto it = std::find(packet_buffer_.begin(), packet_buffer_.end(), 0x00);
+    // デリミタ変数を使用
+    auto it = std::find(packet_buffer_.begin(), packet_buffer_.end(), delimiter_);
 
     // デリミタが見つからなければ、まだパケットが全部届いていない。
     // ループを抜けて、次のデータ受信を待つ。
@@ -189,8 +190,6 @@ void Serial::handle_read(const boost::system::error_code & error, std::size_t by
     // --- 4. 完全なパケットが見つかったので、処理する ---
     // デリミタの位置+1までのデータを1つのパケットとして抽出
     std::vector<unsigned char> received_packet(packet_buffer_.begin(), it + 1);
-    
-    // 処理済みの部分を組み立て用バッファから削除
     packet_buffer_.erase(packet_buffer_.begin(), it + 1);
 
     if (data_callback_) {

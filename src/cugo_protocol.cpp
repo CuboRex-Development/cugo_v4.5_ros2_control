@@ -241,4 +241,25 @@ namespace cugo_ros2_control2
     return decoded;
   }
 
+  std::vector<unsigned char> CugoProtocol::float_to_bin(float value) {
+      std::vector<unsigned char> data(sizeof(float));
+      std::memcpy(data.data(), &value, sizeof(float));
+      return data;
+  }
+  float CugoProtocol::bin_to_float(const unsigned char * data) {
+      float value;
+      std::memcpy(&value, data, sizeof(float));
+      return value;
+  }
+  std::vector<unsigned char> CugoProtocol::int32_to_bin(int32_t value) {
+      std::vector<unsigned char> data(sizeof(int32_t));
+      std::memcpy(data.data(), &value, sizeof(int32_t));
+      return data;
+  }
+  int32_t CugoProtocol::bin_to_int32(const unsigned char * data) {
+      int32_t value;
+      std::memcpy(&value, data, sizeof(int32_t));
+      return value;
+  }
+
 } // namespace cugo_ros2_control2

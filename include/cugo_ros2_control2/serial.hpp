@@ -41,13 +41,14 @@ public:
   // コールバック関数の型エイリアス
   using DataCallback = std::function<void (const std::vector<uint8_t> &)>;
 
-  Serial();
+  Serial(uint8_t delimiter = 0x00);
   ~Serial();
 
   void open(const std::string & port, int baudrate);
   void close();
   bool reconnect(const std::string & port, int baudrate);
   
+  bool is_open() const;
   bool handshake();
 
   void start_read();
@@ -56,17 +57,18 @@ public:
   // 送信メソッド: 既にエンコード済みのバイト列を受け取る
   void write(const std::vector<uint8_t> & data);
 
-
+  uint8_t delimiter_;
   boost::asio::io_context io_context_;
   boost::asio::serial_port serial_port_;
   std::thread io_thread_;
   std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_guard_;
-  
+
+private:
+
   std::array<uint8_t, 256> raw_read_buffer_;
   std::vector<uint8_t> packet_buffer_;
   DataCallback data_callback_;
   
-private:
   void handle_read(const boost::system::error_code & error, std::size_t bytes_transferred);
   void handle_write(const boost::system::error_code & error, std::size_t bytes_transferred);
 };

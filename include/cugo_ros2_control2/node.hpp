@@ -75,7 +75,7 @@ private:
   
   bool is_first_serial_data_{true};
   
-
+  
   // タイマーコールバック
   rclcpp::TimerBase::SharedPtr control_timer;
 
@@ -84,7 +84,7 @@ private:
   std::string base_link_frame_id_;
   std::string subscribe_topic_name;
   std::string publish_topic_name;
-  double control_frequency;
+  
   std::string serial_port;
   int serial_baudrate;
   double cmd_vel_timeout_;
