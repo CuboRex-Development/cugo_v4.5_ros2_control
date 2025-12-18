@@ -36,26 +36,26 @@ namespace cugo_ros2_control2
     // 3. ヘッダ情報の作成
     uint16_t length = static_cast<uint16_t>(packet_size);
 
-    std::memcpy(header_ptr + 0, &cmd.product_id, sizeof(uint16_t));
-    std::memcpy(header_ptr + 2, &cmd.robot_id, sizeof(uint16_t));
-    std::memcpy(header_ptr + 4, &length, sizeof(uint16_t));
+    std::memcpy(header_ptr + HEADER_OFFSET_PRODUCT_ID, &cmd.product_id, sizeof(uint16_t));
+    std::memcpy(header_ptr + HEADER_OFFSET_ROBOT_ID  , &cmd.robot_id, sizeof(uint16_t));
+    std::memcpy(header_ptr + HEADER_OFFSET_LENGTH    , &length, sizeof(uint16_t));
 
     // 4. ボディ情報の書き込み
     // 十分なサイズがある場合のみ書き込む
-    if (body_size >= 64)
+    if (body_size >= MIN_BODY_SIZE)
     {
       // 速度情報の書き込み
       int16_t lin_x_int16 = velocity_to_int16(cmd.linear_x);
       int16_t lin_y_int16 = velocity_to_int16(cmd.linear_y);
       int16_t ang_z_int16 = velocity_to_int16(cmd.angular_z);
 
-      std::memcpy(body_ptr +  0, &lin_x_int16, sizeof(int16_t));
-      std::memcpy(body_ptr +  2, &lin_y_int16, sizeof(int16_t));
-      std::memcpy(body_ptr +  4, &ang_z_int16, sizeof(int16_t));
+      std::memcpy(body_ptr + BODY_OFFSET_VEL_LINEAR_X , &lin_x_int16, sizeof(int16_t));
+      std::memcpy(body_ptr + BODY_OFFSET_VEL_LINEAR_Y , &lin_y_int16, sizeof(int16_t));
+      std::memcpy(body_ptr + BODY_OFFSET_VEL_ANGULAR_Z, &ang_z_int16, sizeof(int16_t));
 
       // プロダクトID, ロボットID の書き込み
-      std::memcpy(body_ptr + 60, &cmd.product_id, sizeof(uint16_t));
-      std::memcpy(body_ptr + 62, &cmd.robot_id  , sizeof(uint16_t));
+      std::memcpy(body_ptr + BODY_OFFSET_PRODUCT_ID, &cmd.product_id, sizeof(uint16_t));
+      std::memcpy(body_ptr + BODY_OFFSET_ROBOT_ID  , &cmd.robot_id  , sizeof(uint16_t));
     }
     else
     {
@@ -65,7 +65,7 @@ namespace cugo_ros2_control2
 
     // 5. チェックサムの計算と設定
     uint16_t checksum = calc_checksum(body_ptr, body_size);
-    std::memcpy(header_ptr + 6, &checksum, sizeof(uint16_t));
+    std::memcpy(header_ptr + HEADER_OFFSET_CHECKSUM, &checksum, sizeof(uint16_t));
 
     // 6. COBSエンコード
     return encode_cobs(raw_packet);
@@ -110,7 +110,7 @@ namespace cugo_ros2_control2
     const uint8_t *body_ptr = decoded_data.data() + HEADER_SIZE;
 
     uint16_t received_checksum;
-    std::memcpy(&received_checksum, header_ptr + 6, sizeof(uint16_t));
+    std::memcpy(&received_checksum, header_ptr + HEADER_OFFSET_CHECKSUM, sizeof(uint16_t));
 
     uint16_t calculated_checksum = calc_checksum(body_ptr, body_size);
 
@@ -122,22 +122,22 @@ namespace cugo_ros2_control2
     }
 
     // 5. 構造体への復元
-    std::memcpy(&out_state.product_id, header_ptr + 0, sizeof(uint16_t));
-    std::memcpy(&out_state.robot_id, header_ptr + 2, sizeof(uint16_t));
+    std::memcpy(&out_state.product_id, header_ptr + HEADER_OFFSET_PRODUCT_ID, sizeof(uint16_t));
+    std::memcpy(&out_state.robot_id  , header_ptr + HEADER_OFFSET_ROBOT_ID  , sizeof(uint16_t));
 
-    if (body_size >= 64)
+    if (body_size >= MIN_BODY_SIZE)
     {
       int16_t lin_x_int16, lin_y_int16, ang_z_int16;
       uint16_t body_pid, body_rid;
 
       // 速度データの復元
-      std::memcpy(&lin_x_int16, body_ptr + 0, sizeof(int16_t));
-      std::memcpy(&lin_y_int16, body_ptr + 2, sizeof(int16_t));
-      std::memcpy(&ang_z_int16, body_ptr + 4, sizeof(int16_t));
+      std::memcpy(&lin_x_int16, body_ptr + BODY_OFFSET_VEL_LINEAR_X , sizeof(int16_t));
+      std::memcpy(&lin_y_int16, body_ptr + BODY_OFFSET_VEL_LINEAR_Y , sizeof(int16_t));
+      std::memcpy(&ang_z_int16, body_ptr + BODY_OFFSET_VEL_ANGULAR_Z, sizeof(int16_t));
 
       // プロダクトID, ロボットID の復元
-      std::memcpy(&body_pid, body_ptr + 60, sizeof(uint16_t));
-      std::memcpy(&body_rid, body_ptr + 62, sizeof(uint16_t));
+      std::memcpy(&body_pid, body_ptr + BODY_OFFSET_PRODUCT_ID, sizeof(uint16_t));
+      std::memcpy(&body_rid, body_ptr + BODY_OFFSET_ROBOT_ID  , sizeof(uint16_t));
 
       // IDのチェック
       if (body_pid != out_state.product_id)
@@ -186,19 +186,19 @@ namespace cugo_ros2_control2
     std::vector<uint8_t> raw_packet(HANDSHAKE_PACKET_SIZE, 0);
     
     // ヘッダへのデータ代入
-    std::memcpy(raw_packet.data() + 0, &expected_state.product_id, sizeof(uint16_t));
-    std::memcpy(raw_packet.data() + 2, &expected_state.robot_id, sizeof(uint16_t));
-    std::memcpy(raw_packet.data() + 4, &HANDSHAKE_PACKET_SIZE, sizeof(uint16_t));
+    std::memcpy(raw_packet.data() + HEADER_OFFSET_PRODUCT_ID, &expected_state.product_id, sizeof(uint16_t));
+    std::memcpy(raw_packet.data() + HEADER_OFFSET_ROBOT_ID, &expected_state.robot_id, sizeof(uint16_t));
+    std::memcpy(raw_packet.data() + HEADER_OFFSET_LENGTH, &HANDSHAKE_PACKET_SIZE, sizeof(uint16_t));
 
     // ボディへのデータ代入
           // プロダクトID, ロボットID の書き込み
-      std::memcpy(raw_packet.data()  + 60, &expected_state.product_id, sizeof(uint16_t));
-      std::memcpy(raw_packet.data()  + 62, &expected_state.robot_id  , sizeof(uint16_t));
+      std::memcpy(raw_packet.data()  + BODY_OFFSET_PRODUCT_ID, &expected_state.product_id, sizeof(uint16_t));
+      std::memcpy(raw_packet.data()  + BODY_OFFSET_ROBOT_ID  , &expected_state.robot_id  , sizeof(uint16_t));
 
     
     // チェックサムの計算
     uint16_t checksum = calc_checksum(raw_packet.data() + HEADER_SIZE, HANDSHAKE_PACKET_SIZE - HEADER_SIZE);
-    std::memcpy(raw_packet.data() + 6, &checksum, sizeof(uint16_t));
+    std::memcpy(raw_packet.data() + HEADER_OFFSET_CHECKSUM, &checksum, sizeof(uint16_t));
 
     return encode_cobs(raw_packet);
   }
@@ -217,10 +217,10 @@ namespace cugo_ros2_control2
 
     // ヘッダ復元
     uint16_t received_pid,received_rid,received_size,received_checksum;
-    std::memcpy(&received_pid     , decoded_data.data() + 0, sizeof(uint16_t));
-    std::memcpy(&received_rid     , decoded_data.data() + 2, sizeof(uint16_t));
-    std::memcpy(&received_size    , decoded_data.data() + 4, sizeof(uint16_t));
-    std::memcpy(&received_checksum, decoded_data.data() + 6, sizeof(uint16_t));
+    std::memcpy(&received_pid     , decoded_data.data() + HEADER_OFFSET_PRODUCT_ID, sizeof(uint16_t));
+    std::memcpy(&received_rid     , decoded_data.data() + HEADER_OFFSET_ROBOT_ID  , sizeof(uint16_t));
+    std::memcpy(&received_size    , decoded_data.data() + HEADER_OFFSET_LENGTH    , sizeof(uint16_t));
+    std::memcpy(&received_checksum, decoded_data.data() + HEADER_OFFSET_CHECKSUM  , sizeof(uint16_t));
 
     // メッセージサイズ再チェック
     if (received_size != HANDSHAKE_PACKET_SIZE) {
@@ -248,8 +248,8 @@ namespace cugo_ros2_control2
     }
 
     // ID復元
-    std::memcpy(&out_data.product_id, decoded_data.data() + 0, sizeof(uint16_t));
-    std::memcpy(&out_data.robot_id  , decoded_data.data() + 2, sizeof(uint16_t));
+    std::memcpy(&out_data.product_id, decoded_data.data() + HEADER_OFFSET_PRODUCT_ID, sizeof(uint16_t));
+    std::memcpy(&out_data.robot_id  , decoded_data.data() + HEADER_OFFSET_ROBOT_ID  , sizeof(uint16_t));
     
     // 速度情報は0埋めしておく（不定値を防ぐため）
     out_data.linear_x = 0.0;

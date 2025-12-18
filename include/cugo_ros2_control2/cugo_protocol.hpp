@@ -21,7 +21,20 @@ namespace cugo_ros2_control2
   // 定数定義
   constexpr size_t HANDSHAKE_PACKET_SIZE = 72; // ハンドシェイク用パケットサイズ
   constexpr size_t DEFAULT_PACKET_SIZE   = 72; // デフォルトのパケットサイズ
+
   constexpr size_t HEADER_SIZE = 8;            // ヘッダサイズ (固定)
+
+  constexpr size_t HEADER_OFFSET_PRODUCT_ID  =  0;
+  constexpr size_t HEADER_OFFSET_ROBOT_ID    =  2;
+  constexpr size_t HEADER_OFFSET_LENGTH      =  4;
+  constexpr size_t HEADER_OFFSET_CHECKSUM    =  6;
+
+  constexpr size_t MIN_BODY_SIZE             = 64;
+  constexpr size_t BODY_OFFSET_VEL_LINEAR_X  =  0;
+  constexpr size_t BODY_OFFSET_VEL_LINEAR_Y  =  2;
+  constexpr size_t BODY_OFFSET_VEL_ANGULAR_Z =  4;
+  constexpr size_t BODY_OFFSET_PRODUCT_ID    = 60;
+  constexpr size_t BODY_OFFSET_ROBOT_ID      = 62;
 
   // ==========================================
   // データ型定義 (Types)
