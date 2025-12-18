@@ -38,6 +38,10 @@
 namespace cugo_ros2_control2
 {
 
+  // 本ノードがサポートするプロダクトIDの範囲
+  constexpr uint16_t SUPPORTED_PRODUCT_ID_MIN = 10000;
+  constexpr uint16_t SUPPORTED_PRODUCT_ID_MAX = 19999;
+
 enum class ConnectionState
 {
   CONNECTED,
