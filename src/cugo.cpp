@@ -57,15 +57,33 @@ std::vector<uint8_t> CuGo::create_handshake_packet()
 bool CuGo::validate_handshake_response(const std::vector<uint8_t>& packet)
 {
   RobotState data;
+  RobotState expected_state;
+  expected_state.product_id = product_id_;
+  expected_state.robot_id = robot_id_;
   // 専用のデシリアライズを使用
-  if (CugoProtocol::deserialize_handshake(packet, data)) {
-    // ID一致確認
-    return (data.product_id == product_id_) && (data.robot_id == robot_id_);
+  bool protocol_compatible =  CugoProtocol::deserialize_handshake(packet, expected_state, data);
+
+  if(protocol_compatible){
+    if(product_id_ != data.product_id){
+      // プロダクトIDが異なるが、プロトコルは互換性があるため通信可能な場合
+      std::cout << "Product ID Mismatch in Handshake Response. Expected: " << get_state().product_id
+                << ", Received: " << data.product_id << std::endl;
+    }
+
+    if(robot_id_ != data.robot_id){
+      // ロボットIDが異なるが、プロダクトIDは一致しているので通信可能な場合
+      std::cout << "Robot ID Mismatch in Handshake Response. Expected: " << get_state().robot_id
+                << ", Received: " << data.robot_id << std::endl;
+    }
+
+    return true;
   }
-  return false;
+  else{
+    
+    return false;
+  }
 }
 
-// 追加: ID一致判定 (通常パケット用)
 bool CuGo::match_identity(const RobotState& state) const
 {
   return (state.product_id == product_id_) && (state.robot_id == robot_id_);
@@ -119,4 +137,4 @@ const std::array<double, 36>& CuGo::get_twist_covariance() const
   return twist_covariance_;
 }
 
-} // namespace cugo_ros2_control2
+} // namespace cugo_ros2_control2bool CuGo::match_identity(const RobotState& state) const

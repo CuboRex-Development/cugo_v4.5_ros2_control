@@ -41,13 +41,21 @@ namespace cugo_ros2_control2
     std::memcpy(header_ptr + 4, &length, sizeof(uint16_t));
 
     // 4. ボディ情報の書き込み
-    // TODO: プロトコルに合わせて適切な形に変える
     // 十分なサイズがある場合のみ書き込む
-    if (body_size >= (sizeof(double) * 3))
+    if (body_size >= 64)
     {
-    //   std::memcpy(body_ptr + 0, &cmd.linear_x, sizeof(double));
-    //   std::memcpy(body_ptr + 8, &cmd.linear_y, sizeof(double));
-    //   std::memcpy(body_ptr + 16, &cmd.angular_z, sizeof(double));
+      // 速度情報の書き込み
+      int16_t lin_x_int16 = velocity_to_int16(cmd.linear_x);
+      int16_t lin_y_int16 = velocity_to_int16(cmd.linear_y);
+      int16_t ang_z_int16 = velocity_to_int16(cmd.angular_z);
+
+      std::memcpy(body_ptr +  0, &lin_x_int16, sizeof(int16_t));
+      std::memcpy(body_ptr +  2, &lin_y_int16, sizeof(int16_t));
+      std::memcpy(body_ptr +  4, &ang_z_int16, sizeof(int16_t));
+
+      // プロダクトID, ロボットID の書き込み
+      std::memcpy(body_ptr + 60, &cmd.product_id, sizeof(uint16_t));
+      std::memcpy(body_ptr + 62, &cmd.robot_id  , sizeof(uint16_t));
     }
     else
     {
@@ -117,12 +125,45 @@ namespace cugo_ros2_control2
     std::memcpy(&out_state.product_id, header_ptr + 0, sizeof(uint16_t));
     std::memcpy(&out_state.robot_id, header_ptr + 2, sizeof(uint16_t));
 
-    // TODO: プロトコルに合わせて適切に復元
-    if (body_size >= (sizeof(double) * 3))
+    if (body_size >= 64)
     {
-      // std::memcpy(&out_state.linear_x, body_ptr + 0, sizeof(double));
-      // std::memcpy(&out_state.linear_y, body_ptr + 8, sizeof(double));
-      // std::memcpy(&out_state.angular_z, body_ptr + 16, sizeof(double));
+      int16_t lin_x_int16, lin_y_int16, ang_z_int16;
+      uint16_t body_pid, body_rid;
+
+      // 速度データの復元
+      std::memcpy(&lin_x_int16, body_ptr + 0, sizeof(int16_t));
+      std::memcpy(&lin_y_int16, body_ptr + 2, sizeof(int16_t));
+      std::memcpy(&ang_z_int16, body_ptr + 4, sizeof(int16_t));
+
+      // プロダクトID, ロボットID の復元
+      std::memcpy(&body_pid, body_ptr + 60, sizeof(uint16_t));
+      std::memcpy(&body_rid, body_ptr + 62, sizeof(uint16_t));
+
+      // IDのチェック
+      if (body_pid != out_state.product_id)
+      {
+        error_msg = "Product ID Mismatch. Header: " + std::to_string(out_state.product_id) +
+                    ", Body: " + std::to_string(body_pid);
+        return false;
+      }
+      
+      if (body_rid != out_state.robot_id)
+      {
+        error_msg = "Robot ID Mismatch. Header: " + std::to_string(out_state.robot_id) +
+                    ", Body: " + std::to_string(body_rid);
+        return false;
+      }
+
+      // プロトコル整合性のチェック
+      if (!is_Protocol_Compatible(body_pid, out_state.product_id))
+      {
+        error_msg = "Protocol Incompatible";
+        return false;
+      }
+
+      out_state.linear_x  = velocity_to_double(lin_x_int16);
+      out_state.linear_y  = velocity_to_double(lin_y_int16);
+      out_state.angular_z = velocity_to_double(ang_z_int16);
     }
     else
     {
@@ -138,24 +179,33 @@ namespace cugo_ros2_control2
 
 
   // --- ハンドシェイク用 (RobotStateを使用) ---
-  std::vector<uint8_t> CugoProtocol::serialize_handshake(const RobotState &data)
+  std::vector<uint8_t> CugoProtocol::serialize_handshake(const RobotState &expected_state)
   {
     // 構成: [PID(2byte)] [RID(2byte)] [Checksum(2byte)] = 6bytes
     // RobotStateのうち、IDのみを使用し、速度情報は無視する
     std::vector<uint8_t> raw_packet(HANDSHAKE_PACKET_SIZE, 0);
     
-    std::memcpy(raw_packet.data() + 0, &data.product_id, sizeof(uint16_t));
-    std::memcpy(raw_packet.data() + 2, &data.robot_id, sizeof(uint16_t));
+    // ヘッダへのデータ代入
+    std::memcpy(raw_packet.data() + 0, &expected_state.product_id, sizeof(uint16_t));
+    std::memcpy(raw_packet.data() + 2, &expected_state.robot_id, sizeof(uint16_t));
+    std::memcpy(raw_packet.data() + 4, &HANDSHAKE_PACKET_SIZE, sizeof(uint16_t));
 
-    // チェックサムはデータ部(4byte)に対して計算
-    uint16_t checksum = calc_checksum(raw_packet.data(), 4);
-    std::memcpy(raw_packet.data() + 4, &checksum, sizeof(uint16_t));
+    // ボディへのデータ代入
+          // プロダクトID, ロボットID の書き込み
+      std::memcpy(raw_packet.data()  + 60, &expected_state.product_id, sizeof(uint16_t));
+      std::memcpy(raw_packet.data()  + 62, &expected_state.robot_id  , sizeof(uint16_t));
+
+    
+    // チェックサムの計算
+    uint16_t checksum = calc_checksum(raw_packet.data() + HEADER_SIZE, HANDSHAKE_PACKET_SIZE - HEADER_SIZE);
+    std::memcpy(raw_packet.data() + 6, &checksum, sizeof(uint16_t));
 
     return encode_cobs(raw_packet);
   }
 
   bool CugoProtocol::deserialize_handshake(
       const std::vector<uint8_t> &packet,
+      const RobotState &expected_state,
       RobotState &out_data)
   {
     std::vector<uint8_t> decoded_data = decode_cobs(packet);
@@ -165,18 +215,41 @@ namespace cugo_ros2_control2
       return false;
     }
 
+    // ヘッダ復元
+    uint16_t received_pid,received_rid,received_size,received_checksum;
+    std::memcpy(&received_pid     , decoded_data.data() + 0, sizeof(uint16_t));
+    std::memcpy(&received_rid     , decoded_data.data() + 2, sizeof(uint16_t));
+    std::memcpy(&received_size    , decoded_data.data() + 4, sizeof(uint16_t));
+    std::memcpy(&received_checksum, decoded_data.data() + 6, sizeof(uint16_t));
+
+    // メッセージサイズ再チェック
+    if (received_size != HANDSHAKE_PACKET_SIZE) {
+      return false;
+    }
+
     // チェックサム検証
-    uint16_t received_checksum;
-    std::memcpy(&received_checksum, decoded_data.data() + 4, sizeof(uint16_t));
-    
-    uint16_t calculated_checksum = calc_checksum(decoded_data.data(), 4);
+    uint16_t calculated_checksum = calc_checksum(decoded_data.data() + HEADER_SIZE, HANDSHAKE_PACKET_SIZE - HEADER_SIZE);
+
     if (received_checksum != calculated_checksum) {
+      return false;
+    }
+
+    // IDのチェック
+    if (received_pid != expected_state.product_id) {
+      return false;
+    }
+    if (received_rid != expected_state.robot_id) {
+      return false;
+    }
+
+    // プロトコル整合性チェック
+    if (!is_Protocol_Compatible(received_pid, expected_state.product_id)) {
       return false;
     }
 
     // ID復元
     std::memcpy(&out_data.product_id, decoded_data.data() + 0, sizeof(uint16_t));
-    std::memcpy(&out_data.robot_id, decoded_data.data() + 2, sizeof(uint16_t));
+    std::memcpy(&out_data.robot_id  , decoded_data.data() + 2, sizeof(uint16_t));
     
     // 速度情報は0埋めしておく（不定値を防ぐため）
     out_data.linear_x = 0.0;
@@ -208,6 +281,11 @@ namespace cugo_ros2_control2
 
     return ~static_cast<uint16_t>(sum);
   }
+
+  bool CugoProtocol::is_Protocol_Compatible(const uint16_t received_product_id, const uint16_t expected_product_id){
+    return (received_product_id/10000) == (expected_product_id/10000);
+  }
+
 
   std::vector<uint8_t> CugoProtocol::encode_cobs(const std::vector<uint8_t> &raw)
   {
@@ -292,6 +370,34 @@ namespace cugo_ros2_control2
         decoded.push_back(0x00);
     }
     return decoded;
+  }
+
+  int16_t CugoProtocol::velocity_to_int16(double velocity_ms)
+  {
+    // 1. m/s -> mm/s 変換
+    double velocity_mms = velocity_ms * 1000.0;
+
+    // 2. 四捨五入
+    velocity_mms = std::round(velocity_mms);
+
+    // 3. int16_t の範囲にクリッピング (オーバーフロー防止)
+    constexpr double max_val = static_cast<double>(std::numeric_limits<int16_t>::max());
+    constexpr double min_val = static_cast<double>(std::numeric_limits<int16_t>::min());
+
+    if (velocity_mms > max_val) {
+      return std::numeric_limits<int16_t>::max();
+    }
+    if (velocity_mms < min_val) {
+      return std::numeric_limits<int16_t>::min();
+    }
+
+    return static_cast<int16_t>(velocity_mms);
+  }
+
+  double CugoProtocol::velocity_to_double(int16_t velocity_mms)
+  {
+    // mm/s -> m/s 変換
+    return static_cast<double>(velocity_mms) / 1000.0;
   }
 
   std::vector<unsigned char> CugoProtocol::float_to_bin(float value) {

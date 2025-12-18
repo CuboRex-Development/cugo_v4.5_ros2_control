@@ -41,7 +41,7 @@ Node::Node()
   this->declare_parameter("serial_baudrate", 115200);
   this->declare_parameter("cmd_vel_timeout", 0.5); // 秒
   this->declare_parameter("serial_timeout", 0.5);  // 秒
-  this->declare_parameter("product_id", 0);
+  this->declare_parameter("product_id", 10000);
   this->declare_parameter("robot_id", 0);
 
   // 共分散
@@ -90,6 +90,13 @@ Node::Node()
   RCLCPP_INFO(this->get_logger(), "serial_timeout: %f", serial_timeout_);
   RCLCPP_DEBUG(this->get_logger(), "product_id: %d", pid);
   RCLCPP_DEBUG(this->get_logger(), "robot_id: %d", rid);
+
+  // 本クラスはproduct_idが10000〜19999のProtocolに対応しているため、範囲外の場合はエラーで終了
+  if((pid / 10000) != 1){
+    RCLCPP_FATAL(this->get_logger(), "product_id %d is not supported by this software. Supported range is 10000-19999. Shutting down.", pid);
+    rclcpp::shutdown();
+    return;
+  }
 
   // 各クラスの初期化
   cugo_ = std::make_unique<CuGo>();

@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <string>
 #include <iostream>
+#include <cmath>
+#include <limits>
 
 namespace cugo_ros2_control2
 {
@@ -99,7 +101,7 @@ namespace cugo_ros2_control2
      * RobotState内の PID, RID のみを使用し、独自形式(6byte)でシリアライズする
      */
     static std::vector<uint8_t> serialize_handshake(
-        const RobotState &data);
+        const RobotState &expected_state);
 
     /**
      * @brief ハンドシェイク用パケット解析
@@ -107,6 +109,7 @@ namespace cugo_ros2_control2
      */
     static bool deserialize_handshake(
         const std::vector<uint8_t> &packet,
+        const RobotState &expected_state,
         RobotState &out_data);
 
     // -------------------------------------------------------
@@ -131,6 +134,24 @@ namespace cugo_ros2_control2
     static uint16_t calc_checksum(const uint8_t *data, size_t size);
 
   private:
+    /**
+     * @brief 引数に渡された2つのPIDが、通信プロトコルに対応しているか確認します。
+     * @return 対応していればtrue、そうでなければfalse
+     */
+    static bool is_Protocol_Compatible(const uint16_t received_product_id, const uint16_t expected_product_id);
+
+    /**
+     * @brief 速度変換: m/s (double) -> mm/s (int16_t)
+     * 1000倍し、int16の範囲(-32768 ~ 32767)に丸め込みます。
+     */
+    static int16_t velocity_to_int16(double velocity_ms);
+
+    /**
+     * @brief 速度変換: mm/s (int16_t) -> m/s (double)
+     * 1/1000倍して double に変換します。
+     */
+    static double velocity_to_double(int16_t velocity_mms);
+
     // バイナリ変換
     static std::vector<unsigned char> float_to_bin(float value);
     static float bin_to_float(const unsigned char * data);
