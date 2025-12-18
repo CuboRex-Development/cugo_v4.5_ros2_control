@@ -39,6 +39,38 @@ void CuGo::set_covariance(const std::array<double, 36>& pose_cov, const std::arr
   twist_covariance_ = twist_cov;
 }
 
+// ハンドシェイクパケット作成 (RobotStateを使用)
+std::vector<uint8_t> CuGo::create_handshake_packet()
+{
+  // 送信用にRobotStateを作成（IDのみセット、速度は0）
+  RobotState data;
+  data.product_id = product_id_;
+  data.robot_id = robot_id_;
+  data.linear_x = 0.0;
+  data.linear_y = 0.0;
+  data.angular_z = 0.0;
+
+  return CugoProtocol::serialize_handshake(data);
+}
+
+// ハンドシェイク応答検証 (RobotStateを使用)
+bool CuGo::validate_handshake_response(const std::vector<uint8_t>& packet)
+{
+  RobotState data;
+  // 専用のデシリアライズを使用
+  if (CugoProtocol::deserialize_handshake(packet, data)) {
+    // ID一致確認
+    return (data.product_id == product_id_) && (data.robot_id == robot_id_);
+  }
+  return false;
+}
+
+// 追加: ID一致判定 (通常パケット用)
+bool CuGo::match_identity(const RobotState& state) const
+{
+  return (state.product_id == product_id_) && (state.robot_id == robot_id_);
+}
+
 void CuGo::update_state(const RobotState& state, double dt)
 {
   // 速度情報の保存

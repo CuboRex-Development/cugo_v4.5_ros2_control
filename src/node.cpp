@@ -18,7 +18,7 @@
 
 using namespace cugo_ros2_control2;
 Node::Node()
-: rclcpp::Node("cugo_ros2_control2")
+    : rclcpp::Node("cugo_ros2_control2")
 {
   // 設定用の一時変数定義
   double control_frequency;
@@ -39,11 +39,11 @@ Node::Node()
   this->declare_parameter("control_frequency", 10.0);
   this->declare_parameter("serial_port", "/dev/ttyACM0");
   this->declare_parameter("serial_baudrate", 115200);
-  this->declare_parameter("cmd_vel_timeout", 0.5);  // 秒
-  this->declare_parameter("serial_timeout", 0.5);   // 秒
+  this->declare_parameter("cmd_vel_timeout", 0.5); // 秒
+  this->declare_parameter("serial_timeout", 0.5);  // 秒
   this->declare_parameter("product_id", 0);
   this->declare_parameter("robot_id", 0);
-  
+
   // 共分散
   this->declare_parameter("pose_cov_x", 0.05);
   this->declare_parameter("pose_cov_y", 0.05);
@@ -91,15 +91,21 @@ Node::Node()
   RCLCPP_DEBUG(this->get_logger(), "product_id: %d", pid);
   RCLCPP_DEBUG(this->get_logger(), "robot_id: %d", rid);
 
-  
   // 各クラスの初期化
   cugo_ = std::make_unique<CuGo>();
   // Serialの初期化 (デリミタ0x00を指定)
   serial_ = std::make_shared<Serial>(0x00);
 
   // CuGoセットアップ
-  pose_cov[0] = px; pose_cov[7] = py; pose_cov[14] = pz; pose_cov[21] = pr; pose_cov[28] = pp; pose_cov[35] = pyaw;
-  twist_cov[0] = tx; twist_cov[7] = ty; twist_cov[35] = tyaw;
+  pose_cov[0] = px;
+  pose_cov[7] = py;
+  pose_cov[14] = pz;
+  pose_cov[21] = pr;
+  pose_cov[28] = pp;
+  pose_cov[35] = pyaw;
+  twist_cov[0] = tx;
+  twist_cov[7] = ty;
+  twist_cov[35] = tyaw;
 
   cugo_->set_identity(static_cast<uint16_t>(pid), static_cast<uint16_t>(rid));
   cugo_->set_covariance(pose_cov, twist_cov);
@@ -108,12 +114,6 @@ Node::Node()
   try
   {
     serial_->open(serial_port, serial_baudrate);
-
-    // ハンドシェイク
-    if (!serial_->handshake())
-    {
-      RCLCPP_WARN(this->get_logger(), "Handshake failed or ignored.");
-    }
 
     serial_->register_callback(std::bind(&Node::serial_data_callback, this, std::placeholders::_1));
     serial_->start_read(); // 受信ループを開始
@@ -130,22 +130,21 @@ Node::Node()
   auto now = this->get_clock()->now();
   last_cmd_vel_time_ = now;
   last_serial_receive_time_ = now;
-  
-  // メッセージの固定値を初期化
-  odom_msg_.header.frame_id = odom_frame_id_;
-  odom_msg_.child_frame_id = base_link_frame_id_;
+  handshake_last_action_time_ = now;
 
   // ROS トピック通信
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
       subscribe_topic_name.c_str(), 1,
       std::bind(&Node::cmd_vel_callback, this, std::placeholders::_1));
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(publish_topic_name.c_str(), 10);
+  handshake_pub_ = this->create_publisher<std_msgs::msg::Bool>("handshake_status", 10);
+
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
   // ループ処理の開始
   control_timer = this->create_wall_timer(
-    std::chrono::milliseconds(static_cast<int>(1000.0 / control_frequency)),
-    std::bind(&Node::control_loop, this));
+      std::chrono::milliseconds(static_cast<int>(1000.0 / control_frequency)),
+      std::bind(&Node::control_loop, this));
 }
 
 void Node::cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
@@ -162,16 +161,53 @@ void Node::cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
 }
 
 // シリアルデータ受信時のコールバック (Serialクラスから呼ばれる)
-void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
+void Node::serial_data_callback(const std::vector<unsigned char> &raw_packet)
 {
   RCLCPP_DEBUG(this->get_logger(), "serial_data_callback()");
   rclcpp::Time current_receive_time = this->get_clock()->now();
 
+  // パブリッシュを実施するかどうかのフラグ
+  bool should_publish = false;
+
+  // ---  ハンドシェイク確認 (cugo_へのアクセスを含むためロック) ---
+  bool is_hs_done_local = false;
+
+  {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    is_hs_done_local = is_handshake_done_;
+
+    if (!is_hs_done_local)
+    {
+      // --- ハンドシェイク未完了時の処理 ---
+      if (cugo_->validate_handshake_response(raw_packet))
+      {
+        RCLCPP_INFO(this->get_logger(), "Handshake Successful! Connected.");
+        is_handshake_done_ = true;
+        handshake_state_ = HandshakeState::COMPLETE;
+        last_serial_receive_time_ = current_receive_time;
+        is_first_serial_data_ = false;
+
+        // ハンドシェイク完了を通知するためにPublishする（位置・速度は変化なし）
+        should_publish = true;
+      }
+    }
+  }
+
+  // ハンドシェイク未完了、かつ今回も成功しなかった場合はここで終了
+  if (!is_hs_done_local && !should_publish) {
+    return;
+  }
+  // ハンドシェイク成功直後の場合はPublishへ飛ぶ
+  if (should_publish) {
+    publish_odom_and_tf();
+    return;
+  }
+
+  // --- 通常通信時の処理 ---
   // 1. プロトコルデコード (deserialize)
   RobotState state;
   std::string error_msg;
   bool success = CugoProtocol::deserialize(raw_packet, state, error_msg);
-
 
   if (!success)
   {
@@ -197,35 +233,105 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
     {
       last_serial_receive_time_ = current_receive_time;
       is_first_serial_data_ = false;
-      return;
     }
+    else {
+      // 2回目以降の受信
+      double dt = (current_receive_time - last_serial_receive_time_).seconds();
+      if (dt <= 0.0)
+      { // 時間が進んでいない場合は計算しない
+        RCLCPP_WARN(this->get_logger(), "dt is zero or negative. Skipping odometry calculation.");
+        return;
+      }else{
 
-    // 2回目以降の受信
-    double dt = (current_receive_time - last_serial_receive_time_).seconds();
-    if (dt <= 0.0)
-    { // 時間が進んでいない場合は計算しない
-      RCLCPP_WARN(this->get_logger(), "dt is zero or negative. Skipping odometry calculation.");
-      return;
+        // ★ 状態更新はCuGoに依頼 (ロック内で行う)
+        cugo_->update_state(state, dt);
+
+        // 受信時間の保存
+        last_serial_receive_time_ = current_receive_time;
+        should_publish = true;
+      }
     }
+  } // Mutex unlock
 
-    // ★ 状態更新はCuGoに依頼 (ロック内で行う)
-    cugo_->update_state(state, dt);
-
-    // 受信時間の保存
-    last_serial_receive_time_ = current_receive_time;
-  }
 
   // 3. 計算したオドメトリとTFを発行
   // publish_odom_and_tf内でもロックを取得するため、ここでは一旦ロックを開放してから呼ぶ
   // （cugo_の状態はupdate_stateで更新済み）
-  publish_odom_and_tf();
-  RCLCPP_DEBUG(this->get_logger(), "serial_data_callback() published");
+  if (should_publish)
+  {
+    publish_odom_and_tf();
+    RCLCPP_DEBUG(this->get_logger(), "serial_data_callback() published");
+  }
 }
 
 void Node::control_loop()
 {
   RCLCPP_DEBUG(this->get_logger(), "control_loop()");
-  // --- 共有データをローカルにコピー ---
+  auto now = this->get_clock()->now();
+
+  // フラグのローカルコピーを取得
+  bool is_hs_done_local;
+  {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    is_hs_done_local = is_handshake_done_;
+  }
+
+  // ステータスPublish (スレッドセーフ)
+  std_msgs::msg::Bool status_msg;
+  status_msg.data = is_hs_done_local;
+  handshake_pub_->publish(status_msg);
+
+  // --- ハンドシェイク処理 ---
+  if (!is_hs_done_local)
+  {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+
+    switch (handshake_state_)
+    {
+      case HandshakeState::INIT:
+        RCLCPP_INFO(this->get_logger(), "Starting Handshake...");
+        handshake_state_ = HandshakeState::SENDING;
+        // fallthrough
+
+      case HandshakeState::SENDING:
+      {
+        // ハンドシェイク専用パケットの生成 (CuGo -> Protocol)
+        std::vector<uint8_t> handshake_packet = cugo_->create_handshake_packet();
+        if (!handshake_packet.empty())
+        {
+          serial_->write(handshake_packet);
+          handshake_last_action_time_ = now;
+          handshake_state_ = HandshakeState::WAITING_ACK;
+          RCLCPP_INFO(this->get_logger(), "Handshake request sent...");
+        }
+        break;
+      }
+
+      case HandshakeState::WAITING_ACK:
+        if ((now - handshake_last_action_time_).seconds() > handshake_timeout_)
+        {
+          RCLCPP_WARN(this->get_logger(), "Handshake Timeout. Retrying later...");
+          handshake_state_ = HandshakeState::FAILED_WAIT;
+          handshake_last_action_time_ = now;
+        }
+        break;
+
+      case HandshakeState::FAILED_WAIT:
+        if ((now - handshake_last_action_time_).seconds() > handshake_retry_interval_)
+        {
+          handshake_state_ = HandshakeState::INIT;
+        }
+        break;
+
+      case HandshakeState::COMPLETE:
+        // callback側でフラグが立ったらここに来る
+        break;
+    }
+    // ハンドシェイク中は他の送信を行わない
+    return;
+  }
+
+  // --- 通常制御ループ ---
   geometry_msgs::msg::Twist local_cmd_vel;
   rclcpp::Time local_last_cmd_vel_time;
   rclcpp::Time local_last_serial_receive_time;
@@ -238,7 +344,6 @@ void Node::control_loop()
     local_last_serial_receive_time = last_serial_receive_time_;
   }
 
-  auto now = this->get_clock()->now();
   double vx = local_cmd_vel.linear.x;
   double vy = local_cmd_vel.linear.y;
   double wz = local_cmd_vel.angular.z;
@@ -254,17 +359,17 @@ void Node::control_loop()
   // ただし頻度が低いパラメータ(ID)参照のみならロックなしでも動くが、設計の一貫性のためにロック
   std::vector<uint8_t> packet;
   {
-      std::lock_guard<std::mutex> lock(data_mutex_);
-      packet = cugo_->create_command_packet(vx, vy, wz);
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    packet = cugo_->create_command_packet(vx, vy, wz);
   }
 
+    // 3. 送信
   if (packet.empty())
   {
     RCLCPP_ERROR(this->get_logger(), "Failed to serialize command packet.");
   }
   else
   {
-    // 3. 送信
     serial_->write(packet);
   }
 
@@ -278,7 +383,11 @@ void Node::control_loop()
       RCLCPP_WARN(
           this->get_logger(), "Serial connection timeout detected. Entering reconnect mode...");
       connection_state_ = ConnectionState::RECONNECTING;
-      last_reconnect_attmpt_time_ = now; // 最初の試行時刻を記録
+      last_reconnect_attmpt_time_ = now;
+
+      std::lock_guard<std::mutex> lock(data_mutex_);
+      is_handshake_done_ = false;
+      handshake_state_ = HandshakeState::INIT;
     }
   }
   else if (connection_state_ == ConnectionState::RECONNECTING)
@@ -287,22 +396,30 @@ void Node::control_loop()
     if ((now - last_reconnect_attmpt_time_).seconds() > 3.0)
     {
       RCLCPP_INFO(this->get_logger(), "Trying to reconnect...");
+      bool reconnect_success = false;
       try
       {
         if (serial_->reconnect(serial_port, serial_baudrate))
         {
-          RCLCPP_INFO(this->get_logger(), "Reconnect successful!");
-          connection_state_ = ConnectionState::CONNECTED;
-          is_first_serial_data_ = true;
-          std::lock_guard<std::mutex> lock(data_mutex_);
-          last_serial_receive_time_ = now;
+          reconnect_success = true;
         }
       }
       catch (const std::exception &e)
       {
-        RCLCPP_WARN(this->get_logger(), "Reconnect attmpt failed: %s", e.what());
+        RCLCPP_WARN(this->get_logger(), "Reconnect failed: %s", e.what());
       }
-      last_reconnect_attmpt_time_ = now; // 次の試行時刻を更新
+
+      if (reconnect_success) {
+          RCLCPP_INFO(this->get_logger(), "Reconnect successful! Restarting handshake.");
+          connection_state_ = ConnectionState::CONNECTED;
+
+          std::lock_guard<std::mutex> lock(data_mutex_);
+          is_handshake_done_ = false;
+          handshake_state_ = HandshakeState::INIT;
+          is_first_serial_data_ = true;
+          last_serial_receive_time_ = now;
+        }
+      last_reconnect_attmpt_time_ = now;
     }
   }
 
@@ -311,27 +428,48 @@ void Node::control_loop()
   {
     RCLCPP_WARN(this->get_logger(), "シリアル通信未達。接続を確認してください。");
     // Picoが機能不全の可能性。速度ゼロのオドメトリを発行して異常を知らせる。
-    std::lock_guard<std::mutex> lock(data_mutex_);
-    RCLCPP_DEBUG(this->get_logger(), "速度0,共分散1e9を入力");
+    // cugo_の現在位置を取得してメッセージを作る (ロック最小化)
+    Pose2D current_pose;
+    {
+      std::lock_guard<std::mutex> lock(data_mutex_);
+        current_pose = cugo_->get_pose(); 
+    }
 
+    // TF発行
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = now;
+    t.header.frame_id = odom_frame_id_;
+    t.child_frame_id = base_link_frame_id_;
+    t.transform.translation.x = current_pose.x;
+    t.transform.translation.y = current_pose.y;
+    t.transform.translation.z = 0.0;
     
-    // 速度を0にする
-    odom_msg_.twist.twist.linear.x = 0.0;
-    odom_msg_.twist.twist.linear.y = 0.0;
-    odom_msg_.twist.twist.angular.z = 0.0;
+    tf2::Quaternion q;
+    q.setRPY(0, 0, current_pose.yaw);
+    t.transform.rotation = tf2::toMsg(q);
+    tf_broadcaster_->sendTransform(t);
+
+    // Odomメッセージ構築 (速度0, 共分散大)
+    nav_msgs::msg::Odometry lost_odom;
+    lost_odom.header.stamp = now;
+    lost_odom.header.frame_id = odom_frame_id_;
+    lost_odom.child_frame_id = base_link_frame_id_;
+    lost_odom.pose.pose.position.x = current_pose.x;
+    lost_odom.pose.pose.position.y = current_pose.y;
+    lost_odom.pose.pose.orientation = t.transform.rotation;
     
+    // 速度ゼロ
+    lost_odom.twist.twist.linear.x = 0.0;
+    lost_odom.twist.twist.linear.y = 0.0;
+    lost_odom.twist.twist.angular.z = 0.0;
+
     // 共分散を非常に大きな値に設定 (1e9)
-    odom_msg_.pose.covariance.fill(1e9);
-    odom_msg_.twist.covariance.fill(1e9);
-
-    // タイムスタンプ更新
-    odom_msg_.header.stamp = now;
+    lost_odom.pose.covariance.fill(1e9);
+    lost_odom.twist.covariance.fill(1e9);
 
     // パブリッシュ
-    odom_pub_->publish(odom_msg_);
-    
+    odom_pub_->publish(lost_odom);
 
-    publish_odom_and_tf();  // 既に止まっている位置情報と速度ゼロを定期的に発行
     RCLCPP_DEBUG(this->get_logger(), "control_loop() zero /cmd_vel published");
   }
 }
@@ -343,51 +481,58 @@ void Node::publish_odom_and_tf()
 
   Pose2D pose;
   RobotState state;
-  
-  // cugo_ へのアクセスと odom_msg_ の更新は Mutex で保護
+  std::array<double, 36> pose_cov;
+  std::array<double, 36> twist_cov;
+
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    
+
     // ★ 現在の状態をCuGoから取得
     pose = cugo_->get_pose();
     state = cugo_->get_state();
-    
+
     // ★ 共分散をCuGoから復元 (通信断時に上書きされた値を正常値に戻す)
-    odom_msg_.pose.covariance = cugo_->get_pose_covariance();
-    odom_msg_.twist.covariance = cugo_->get_twist_covariance();
+    pose_cov = cugo_->get_pose_covariance();
+    twist_cov = cugo_->get_twist_covariance();
+  } // Unlock
 
-    geometry_msgs::msg::TransformStamped t;
-    t.header.stamp = now;
-    t.header.frame_id = odom_frame_id_;
-    t.child_frame_id = base_link_frame_id_;
+  geometry_msgs::msg::TransformStamped t;
+  t.header.stamp = now;
+  t.header.frame_id = odom_frame_id_;
+  t.child_frame_id = base_link_frame_id_;
 
-    // OdometryメッセージのPose情報をそのまま使う
-    t.transform.translation.x = pose.x;
-    t.transform.translation.y = pose.y;
-    t.transform.translation.z = 0.0;
-    
-    tf2::Quaternion q;
-    q.setRPY(0, 0, pose.yaw);
-    t.transform.rotation = tf2::toMsg(q);
-    tf_broadcaster_->sendTransform(t);
+  // OdometryメッセージのPose情報をそのまま使う
+  t.transform.translation.x = pose.x;
+  t.transform.translation.y = pose.y;
+  t.transform.translation.z = 0.0;
 
-    odom_msg_.header.stamp = now;
-    odom_msg_.pose.pose.position.x = pose.x;
-    odom_msg_.pose.pose.position.y = pose.y;
-    odom_msg_.pose.pose.orientation = t.transform.rotation;
-    
-    odom_msg_.twist.twist.linear.x = state.linear_x;
-    odom_msg_.twist.twist.linear.y = state.linear_y;
-    odom_msg_.twist.twist.angular.z = state.angular_z;
+  tf2::Quaternion q;
+  q.setRPY(0, 0, pose.yaw);
+  t.transform.rotation = tf2::toMsg(q);
+  tf_broadcaster_->sendTransform(t);
 
-    odom_pub_->publish(odom_msg_);
-  } // Mutex release
+  nav_msgs::msg::Odometry odom;
+  odom.header.stamp = now;
+  odom.header.frame_id = odom_frame_id_;
+  odom.child_frame_id = base_link_frame_id_;
+  
+  odom.pose.pose.position.x = pose.x;
+  odom.pose.pose.position.y = pose.y;
+  odom.pose.pose.orientation = t.transform.rotation;
+  odom.pose.covariance = pose_cov;
+  
+  odom.twist.twist.linear.x = state.linear_x;
+  odom.twist.twist.linear.y = state.linear_y;
+  odom.twist.twist.angular.z = state.angular_z;
+  odom.twist.covariance = twist_cov;
+
+  odom_pub_->publish(odom);
 
   // デバッグログ (ローカル変数 pose/state を使用してアクセス違反を回避)
   RCLCPP_DEBUG(
       this->get_logger(), "Odometry: X=%lf, Y=%lf, Yaw=%lf",
       pose.x, pose.y, pose.yaw);
   RCLCPP_DEBUG(
-      this->get_logger(), "Velocity: Linear=%lf, Angular=%lf", 
+      this->get_logger(), "Velocity: Linear=%lf, Angular=%lf",
       state.linear_x, state.angular_z);
 }

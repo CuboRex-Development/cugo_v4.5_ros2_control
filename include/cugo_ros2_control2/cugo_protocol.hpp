@@ -17,8 +17,9 @@ namespace cugo_ros2_control2
 {
 
   // 定数定義
-  constexpr size_t DEFAULT_PACKET_SIZE = 72; // デフォルトのパケットサイズ
-  constexpr size_t HEADER_SIZE = 8;          // ヘッダサイズ (固定)
+  constexpr size_t HANDSHAKE_PACKET_SIZE = 72; // ハンドシェイク用パケットサイズ
+  constexpr size_t DEFAULT_PACKET_SIZE   = 72; // デフォルトのパケットサイズ
+  constexpr size_t HEADER_SIZE = 8;            // ヘッダサイズ (固定)
 
   // ==========================================
   // データ型定義 (Types)
@@ -91,6 +92,22 @@ namespace cugo_ros2_control2
         RobotState &out_state,
         std::string &error_msg,
         size_t packet_size = DEFAULT_PACKET_SIZE);
+
+    // --- ハンドシェイク用 (RobotStateを流用) ---
+    /**
+     * @brief ハンドシェイク用パケット生成
+     * RobotState内の PID, RID のみを使用し、独自形式(6byte)でシリアライズする
+     */
+    static std::vector<uint8_t> serialize_handshake(
+        const RobotState &data);
+
+    /**
+     * @brief ハンドシェイク用パケット解析
+     * 受信した独自形式(6byte)を RobotState の PID, RID に復元する。速度は0とする。
+     */
+    static bool deserialize_handshake(
+        const std::vector<uint8_t> &packet,
+        RobotState &out_data);
 
     // -------------------------------------------------------
     // ユーティリティ

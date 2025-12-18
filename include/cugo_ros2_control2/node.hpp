@@ -19,21 +19,21 @@
 
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <mutex>
-#include <nav_msgs/msg/odometry.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <string>
 #include <vector>
 
 #include "cugo_ros2_control2/cugo.hpp"
 #include "cugo_ros2_control2/serial.hpp"
+#include "cugo_ros2_control2/cugo_protocol.hpp" 
 #include "tf2/LinearMath/Matrix3x3.h"
+
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
-
 #include "tf2_ros/transform_broadcaster.h"
-#include "cugo_ros2_control2/cugo_protocol.hpp" 
 
 namespace cugo_ros2_control2
 {
@@ -43,6 +43,16 @@ enum class ConnectionState
   CONNECTED,
   DISCONNECTED,
   RECONNECTING
+};
+
+// ハンドシェイクの状態定義
+enum class HandshakeState
+{
+  INIT,           // 初期化
+  SENDING,        // 送信中
+  WAITING_ACK,    // 応答待ち
+  FAILED_WAIT,    // 失敗・再試行待ち
+  COMPLETE        // 完了
 };
 
 class Node : public rclcpp::Node
@@ -59,6 +69,7 @@ private:
   // サブスクライバーとパブリッシャー
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr handshake_pub_; // ハンドシェイク状態
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   // インスタンス
@@ -90,8 +101,13 @@ private:
   double cmd_vel_timeout_;
   double serial_timeout_;
   
-  // 送信用メッセージバッファ
-  nav_msgs::msg::Odometry odom_msg_;
+
+  // ハンドシェイクバッファ
+  HandshakeState handshake_state_{HandshakeState::INIT};
+  rclcpp::Time handshake_last_action_time_;
+  bool is_handshake_done_{false};
+  double handshake_timeout_{1.0};
+  double handshake_retry_interval_{2.0};
 };
 
 }  // namespace cugo_ros2_control2

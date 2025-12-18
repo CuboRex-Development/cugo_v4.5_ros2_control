@@ -134,6 +134,59 @@ namespace cugo_ros2_control2
     return true; // 成功
   }
 
+
+
+
+  // --- ハンドシェイク用 (RobotStateを使用) ---
+  std::vector<uint8_t> CugoProtocol::serialize_handshake(const RobotState &data)
+  {
+    // 構成: [PID(2byte)] [RID(2byte)] [Checksum(2byte)] = 6bytes
+    // RobotStateのうち、IDのみを使用し、速度情報は無視する
+    std::vector<uint8_t> raw_packet(HANDSHAKE_PACKET_SIZE, 0);
+    
+    std::memcpy(raw_packet.data() + 0, &data.product_id, sizeof(uint16_t));
+    std::memcpy(raw_packet.data() + 2, &data.robot_id, sizeof(uint16_t));
+
+    // チェックサムはデータ部(4byte)に対して計算
+    uint16_t checksum = calc_checksum(raw_packet.data(), 4);
+    std::memcpy(raw_packet.data() + 4, &checksum, sizeof(uint16_t));
+
+    return encode_cobs(raw_packet);
+  }
+
+  bool CugoProtocol::deserialize_handshake(
+      const std::vector<uint8_t> &packet,
+      RobotState &out_data)
+  {
+    std::vector<uint8_t> decoded_data = decode_cobs(packet);
+    
+    // サイズチェック
+    if (decoded_data.size() != HANDSHAKE_PACKET_SIZE) {
+      return false;
+    }
+
+    // チェックサム検証
+    uint16_t received_checksum;
+    std::memcpy(&received_checksum, decoded_data.data() + 4, sizeof(uint16_t));
+    
+    uint16_t calculated_checksum = calc_checksum(decoded_data.data(), 4);
+    if (received_checksum != calculated_checksum) {
+      return false;
+    }
+
+    // ID復元
+    std::memcpy(&out_data.product_id, decoded_data.data() + 0, sizeof(uint16_t));
+    std::memcpy(&out_data.robot_id, decoded_data.data() + 2, sizeof(uint16_t));
+    
+    // 速度情報は0埋めしておく（不定値を防ぐため）
+    out_data.linear_x = 0.0;
+    out_data.linear_y = 0.0;
+    out_data.angular_z = 0.0;
+
+    return true;
+  }
+
+  // --- 共通ユーティリティ ---
   uint16_t CugoProtocol::calc_checksum(const uint8_t *data, size_t size)
   {
     if (size % 2 != 0)

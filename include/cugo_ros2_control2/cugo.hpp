@@ -35,6 +35,23 @@ public:
   // 共分散設定
   void set_covariance(const std::array<double, 36>& pose_cov, const std::array<double, 36>& twist_cov);
 
+  // --- ハンドシェイク・判定系 ---
+  /**
+   * @brief ハンドシェイク用パケットを作成
+   */
+  std::vector<uint8_t> create_handshake_packet();
+
+  /**
+   * @brief 受信パケットがハンドシェイク応答として正しいか検証
+   */
+  bool validate_handshake_response(const std::vector<uint8_t>& packet);
+
+  /**
+   * @brief 受信データのIDが自身と一致するか確認する (通常パケット用)
+   */
+  bool match_identity(const RobotState& state) const;
+
+
   // --- 更新・計算系 ---
   // 状態更新 (物理計算)
   void update_state(const RobotState& state, double dt);
