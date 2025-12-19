@@ -131,18 +131,6 @@ bool Serial::reconnect(const std::string & port, int baudrate)
   }
 }
 
-bool Serial::handshake()
-{
-  std::cout << "[Serial INFO] Handshaking..." << std::endl;
-  if (!serial_port_.is_open()) {return false;}
-
-  // TODO: ハンドシェイク処理をここに記述する
-  // 例: 通信相手に接続要求を送り、ACKとともにハードウェア情報が保存されていれば確認する
-
-  std::cout << "[Serial INFO] Handshake done." << std::endl;
-  return true;
-}
-
 bool Serial::is_open() const
 {
   return serial_port_.is_open();

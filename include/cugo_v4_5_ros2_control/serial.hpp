@@ -49,7 +49,6 @@ public:
   bool reconnect(const std::string & port, int baudrate);
 
   bool is_open() const;
-  bool handshake();
 
   void start_read();
   void register_callback(DataCallback callback);
