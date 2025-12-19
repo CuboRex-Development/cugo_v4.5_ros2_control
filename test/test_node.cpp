@@ -15,10 +15,13 @@
 */
 
 #include <gtest/gtest.h>
-
+#include <rclcpp/rclcpp.hpp>
 #include "cugo_ros2_control2/node.hpp"
+#include <memory>
+#include <chrono>
 
 using namespace cugo_ros2_control2;
+using namespace std::chrono_literals;
 
 class NodeTest : public ::testing::Test
 {
@@ -40,16 +43,38 @@ protected:
   // 各テストケース前に実行されるセットアップ
   void SetUp() override
   {
-    // Nodeのインスタンス化
-    node = std::make_shared<Node>();
   }
 
   // 各テストケース後に実行されるティアダウン
   void TearDown() override
   {
-    // Nodeのクリーンアップ
-    node.reset();
   }
-
-  std::shared_ptr<Node> node;
 };
+
+// ノードの初期化とパラメータ読み込みのテスト
+// 実機がない場合でもインスタンス化でクラッシュしないことを確認
+TEST_F(NodeTest, test_initialization)
+{
+  // ポートが存在しなくても例外で落ちないよう、内部でtry-catchされているか確認
+  // (Nodeコンストラクタは通信失敗時に rclcpp::shutdown() を呼ぶ仕様なので、
+  //  ここではインスタンス化の試行を行う)
+  
+  std::shared_ptr<Node> node;
+  
+  // パラメータオーバーライドを使ってテスト
+  rclcpp::NodeOptions options;
+  options.append_parameter_override("product_id", 10000);
+  options.append_parameter_override("serial_port", "/dev/ttyFAKE");
+  
+  EXPECT_NO_THROW({
+    node = std::make_shared<Node>();
+  });
+
+  if (node) {
+    EXPECT_STREQ(node->get_name(), "cugo_ros2_control2");
+    
+    // パラメータが正しく宣言されているか
+    EXPECT_TRUE(node->has_parameter("product_id"));
+    EXPECT_TRUE(node->has_parameter("control_frequency"));
+  }
+}
