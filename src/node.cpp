@@ -188,6 +188,8 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
       if (cugo_->validate_handshake_response(raw_packet)) {
         RCLCPP_INFO(this->get_logger(), "Handshake Successful! Connected.");
         is_handshake_done_ = true;
+
+        connection_state_ = ConnectionState::CONNECTED;
         handshake_state_ = HandshakeState::COMPLETE;
         last_serial_receive_time_ = current_receive_time;
         is_first_serial_data_ = false;
