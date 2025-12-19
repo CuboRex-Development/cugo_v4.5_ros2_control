@@ -58,21 +58,21 @@ TEST_F(NodeTest, test_initialization)
   // ポートが存在しなくても例外で落ちないよう、内部でtry-catchされているか確認
   // (Nodeコンストラクタは通信失敗時に rclcpp::shutdown() を呼ぶ仕様なので、
   //  ここではインスタンス化の試行を行う)
-  
+
   std::shared_ptr<Node> node;
-  
+
   // パラメータオーバーライドを使ってテスト
   rclcpp::NodeOptions options;
   options.append_parameter_override("product_id", 10000);
   options.append_parameter_override("serial_port", "/dev/ttyFAKE");
-  
+
   EXPECT_NO_THROW({
     node = std::make_shared<Node>();
   });
 
   if (node) {
     EXPECT_STREQ(node->get_name(), "cugo_ros2_control2");
-    
+
     // パラメータが正しく宣言されているか
     EXPECT_TRUE(node->has_parameter("product_id"));
     EXPECT_TRUE(node->has_parameter("control_frequency"));

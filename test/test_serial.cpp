@@ -30,7 +30,7 @@ protected:
   // テスト用の仮想ポート名
   // socat -d -d pty,raw,echo=0,link=/tmp/ttyV0 pty,raw,echo=0,link=/tmp/ttyV1
   const std::string TEST_PORT_MASTER = "/tmp/ttyV0";
-  
+
   std::shared_ptr<Serial> test_serial;
 
   void SetUp() override
@@ -42,12 +42,13 @@ protected:
   void TearDown() override
   {
     // クリーンアップ
-        if (test_serial && test_serial->is_open()) {
+    if (test_serial && test_serial->is_open()) {
       test_serial->close();
     }
   }
 
-  bool port_exists(const std::string& port) {
+  bool port_exists(const std::string & port)
+  {
     std::ifstream f(port.c_str());
     return f.good();
   }
@@ -65,7 +66,7 @@ TEST_F(SerialTest, test_open)
     port_to_use = TEST_PORT_MASTER;
   } else if (!port_exists(port_to_use)) {
     std::cout << "[SKIP] No serial port found. Skipping open test." << std::endl;
-    return; 
+    return;
   }
 
   // シリアルポートを開くテスト
@@ -80,7 +81,7 @@ TEST_F(SerialTest, test_open)
 TEST_F(SerialTest, test_close)
 {
   std::cout << "[Serial TEST] test_close" << std::endl;
-  
+
   std::string port_to_use = "/dev/ttyACM0";
   if (port_exists(TEST_PORT_MASTER)) {
     port_to_use = TEST_PORT_MASTER;
@@ -99,7 +100,7 @@ TEST_F(SerialTest, test_close)
 TEST_F(SerialTest, test_reconnect)
 {
   std::cout << "[Serial TEST] test_reconnect" << std::endl;
-  
+
   std::string port_to_use = "/dev/ttyACM0";
   if (port_exists(TEST_PORT_MASTER)) {
     port_to_use = TEST_PORT_MASTER;

@@ -20,15 +20,16 @@ namespace cugo_ros2_control2
 {
 
 Serial::Serial(uint8_t delimiter)
-: delimiter_(delimiter),serial_port_(io_context_)
+: delimiter_(delimiter), serial_port_(io_context_)
 {
   work_guard_.emplace(boost::asio::make_work_guard(io_context_.get_executor()));
-  io_thread_ = std::thread([this]() { 
-    try {
-      io_context_.run(); 
-    } catch (...) {}
+  io_thread_ = std::thread([this]() {
+        try {
+          io_context_.run();
+        } catch (...) {
+        }
   });
-  std::cout << "[Serial INFO] Serial object created with delimiter: " 
+  std::cout << "[Serial INFO] Serial object created with delimiter: "
             << static_cast<int>(delimiter_) << std::endl;
 }
 
@@ -54,9 +55,12 @@ void Serial::open(const std::string & port, int baudrate)
     serial_port_.open(port);
     serial_port_.set_option(boost::asio::serial_port_base::baud_rate(baudrate));
     serial_port_.set_option(boost::asio::serial_port_base::character_size(8));
-    serial_port_.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none));
-    serial_port_.set_option(boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one));
-    serial_port_.set_option(boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none));
+    serial_port_.set_option(boost::asio::serial_port_base::parity(
+        boost::asio::serial_port_base::parity::none));
+    serial_port_.set_option(boost::asio::serial_port_base::stop_bits(
+        boost::asio::serial_port_base::stop_bits::one));
+    serial_port_.set_option(boost::asio::serial_port_base::flow_control(
+        boost::asio::serial_port_base::flow_control::none));
 
     std::cout << "[Serial INFO] Serial port " << port << " opened with baudrate " << baudrate
               << std::endl;
@@ -97,11 +101,11 @@ void Serial::close()
   if (io_thread_.joinable()) {
     io_thread_.join();
   }
-  
+
   if (serial_port_.is_open()) {
     boost::system::error_code ec;
     serial_port_.close(ec);
-    if (ec) std::cerr << "[Serial ERROR] Error closing: " << ec.message() << std::endl;
+    if (ec) {std::cerr << "[Serial ERROR] Error closing: " << ec.message() << std::endl;}
   }
 }
 
@@ -116,7 +120,7 @@ bool Serial::reconnect(const std::string & port, int baudrate)
   }
   // work_guard_の再構築
   work_guard_.emplace(boost::asio::make_work_guard(io_context_.get_executor()));
-  
+
   try {
     open(port, baudrate);
     std::cout << "[Serial INFO] Reconnect successful." << std::endl;
@@ -130,11 +134,11 @@ bool Serial::reconnect(const std::string & port, int baudrate)
 bool Serial::handshake()
 {
   std::cout << "[Serial INFO] Handshaking..." << std::endl;
-  if (!serial_port_.is_open()) return false;
+  if (!serial_port_.is_open()) {return false;}
 
   // TODO: ハンドシェイク処理をここに記述する
   // 例: 通信相手に接続要求を送り、ACKとともにハードウェア情報が保存されていれば確認する
-  
+
   std::cout << "[Serial INFO] Handshake done." << std::endl;
   return true;
 }
@@ -173,7 +177,8 @@ void Serial::handle_read(const boost::system::error_code & error, std::size_t by
   }
 
   if (bytes_transferred > 0) {
-    packet_buffer_.insert(packet_buffer_.end(), raw_read_buffer_.begin(), raw_read_buffer_.begin() + bytes_transferred);
+    packet_buffer_.insert(packet_buffer_.end(), raw_read_buffer_.begin(),
+        raw_read_buffer_.begin() + bytes_transferred);
   }
 
   // --- 3. バッファからパケットを探索・処理するループ ---
@@ -211,7 +216,9 @@ void Serial::write(const std::vector<unsigned char> & encoded_packet)
       boost::asio::placeholders::bytes_transferred));
 }
 
-void Serial::handle_write(const boost::system::error_code & error, std::size_t /*bytes_transferred*/)
+void Serial::handle_write(
+  const boost::system::error_code & error,
+  std::size_t /*bytes_transferred*/)
 {
   if (error) {
     // ポートを閉じたことによる正常な中断はエラーとして扱わない
@@ -220,7 +227,7 @@ void Serial::handle_write(const boost::system::error_code & error, std::size_t /
     } else {
       // その他の書き込みエラー
       std::cerr << "[Serial ERROR][handle_write] Write error: " << error.message() << std::endl;
-      }
+    }
     return;
   }
 }

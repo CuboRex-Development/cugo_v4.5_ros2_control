@@ -1,9 +1,10 @@
+import os
+
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
-import os
 import xacro
 
 
@@ -43,14 +44,14 @@ def generate_launch_description():
         'control_frequency': 10.0,  # MAX:100.0
         'serial_port': '/dev/ttyACM0',
         'serial_baudrate': 115200,
-        'cmd_vel_timeout': 0.5,     # 秒
-        'serial_timeout': 0.5,      # 秒
-        'tread': 0.376,             # cugov4のトレッド幅
+        'cmd_vel_timeout': 0.5,  # 秒
+        'serial_timeout': 0.5,  # 秒
+        'tread': 0.376,  # cugov4のトレッド幅
         'l_wheel_radius': 0.03858,  # cugov4のスプロケット半径
         'r_wheel_radius': 0.03858,  # cugov4のスプロケット半径
-        'reduction_ratio': 20.0,    # cugov4のオリエンタルモータの減速比
-        'encoder_resolution': 30,   # cugov4のオリエンタルモータのエンコーダホール数
-        'product_id': 1,            # cugov4の識別子
+        'reduction_ratio': 20.0,  # cugov4のオリエンタルモータの減速比
+        'encoder_resolution': 30,  # cugov4のオリエンタルモータのエンコーダホール数
+        'product_id': 1,  # cugov4の識別子
 
         # 共分散の設定
         # SLAMやLocalizationで調整
@@ -64,7 +65,7 @@ def generate_launch_description():
         'pose_cov_yaw': 0.01,  # 0.1rad^2
 
         # ロボットの速度
-        'twist_cov_linear_x': 0.0001,   # 0.01m^2
+        'twist_cov_linear_x': 0.0001,  # 0.01m^2
         'twist_cov_angular_z': 0.0001,  # 0.01m^2
     }
 

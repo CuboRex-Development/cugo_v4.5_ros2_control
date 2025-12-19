@@ -85,7 +85,7 @@ ament_target_dependencies(
 # インストール設定
 # ---------------------------------------------------------
 
-install(TARGETS 
+install(TARGETS
   cugo_ros2_control2
   cugo_lib
   node_lib
@@ -111,7 +111,7 @@ install(DIRECTORY urdf
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   find_package(ament_cmake_gtest REQUIRED)
-  
+
   # コードスタイルのチェック等は必要に応じて有効化してください
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)

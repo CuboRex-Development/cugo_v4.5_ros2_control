@@ -28,7 +28,7 @@
 
 #include "cugo_ros2_control2/cugo.hpp"
 #include "cugo_ros2_control2/serial.hpp"
-#include "cugo_ros2_control2/cugo_protocol.hpp" 
+#include "cugo_ros2_control2/cugo_protocol.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 
 #include "tf2/LinearMath/Quaternion.h"
@@ -39,8 +39,8 @@ namespace cugo_ros2_control2
 {
 
   // 本ノードがサポートするプロダクトIDの範囲
-  constexpr uint16_t SUPPORTED_PRODUCT_ID_MIN = 10000;
-  constexpr uint16_t SUPPORTED_PRODUCT_ID_MAX = 19999;
+constexpr uint16_t SUPPORTED_PRODUCT_ID_MIN = 10000;
+constexpr uint16_t SUPPORTED_PRODUCT_ID_MAX = 19999;
 
 enum class ConnectionState
 {
@@ -87,10 +87,10 @@ private:
   geometry_msgs::msg::Twist latest_cmd_vel_;
   rclcpp::Time last_cmd_vel_time_;
   rclcpp::Time last_serial_receive_time_;
-  
+
   bool is_first_serial_data_{true};
-  
-  
+
+
   // タイマーコールバック
   rclcpp::TimerBase::SharedPtr control_timer;
 
@@ -99,12 +99,12 @@ private:
   std::string base_link_frame_id_;
   std::string subscribe_topic_name;
   std::string publish_topic_name;
-  
+
   std::string serial_port;
   int serial_baudrate;
   double cmd_vel_timeout_;
   double serial_timeout_;
-  
+
 
   // ハンドシェイクバッファ
   HandshakeState handshake_state_{HandshakeState::INIT};

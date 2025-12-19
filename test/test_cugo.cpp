@@ -24,7 +24,7 @@ class CuGoTest : public ::testing::Test
 {
 protected:
   // パラメータなしコンストラクタを使用
-  CuGo cugo; 
+  CuGo cugo;
 
   void SetUp() override
   {
@@ -89,39 +89,38 @@ TEST_F(CuGoTest, test_update_state_odometry)
   // 2. 旋回: 0.3 m/s, 1.57 rad/s で 0.1秒
   state.linear_x = 0.3;
   state.angular_z = 1.57;
-  
+
   cugo.update_state(state, dt);
   pose = cugo.get_pose();
 
   // 期待値計算 (オイラー積分: x += v*cos(yaw)*dt, yaw += w*dt)
   // yaw_new = 0.0 + 0.157 = 0.157
-  // x_new = 0.05 + 0.3 * cos(0.157) * 0.1 
-  // 
+  // x_new = 0.05 + 0.3 * cos(0.157) * 0.1
+  //
   // next_yaw = 0.157
   // dx = 0.3 * cos(0.157) * 0.1 = 0.03 * 0.9876 = 0.0296
   // dy = 0.3 * sin(0.157) * 0.1 = 0.03 * 0.1564 = 0.00469
-  
-  ASSERT_NEAR(pose.x, 0.05 + (0.3 * std::cos(0.157) * 0.1), 1e-4); 
+
+  ASSERT_NEAR(pose.x, 0.05 + (0.3 * std::cos(0.157) * 0.1), 1e-4);
   ASSERT_NEAR(pose.y, 0.0 + (0.3 * std::sin(0.157) * 0.1), 1e-4);
   ASSERT_NEAR(pose.yaw, 0.157, 1e-4);
 
   // 2. 旋回: 0.5 m/s, -3.14 rad/s で 0.1秒
   state.linear_x = 0.5;
   state.angular_z = -3.14;
-  
+
   cugo.update_state(state, dt);
   pose = cugo.get_pose();
 
   // 期待値計算 (オイラー積分: x += v*cos(yaw)*dt, yaw += w*dt)
   // yaw_new = 0.157 + (-0.314) = -0.157
-  // x_new = prev_x + 0.5 * cos(-0.157) * 0.1 
+  // x_new = prev_x + 0.5 * cos(-0.157) * 0.1
   // y_new = prev_y + 0.5 * sin(0.157) * 0.1
 
-  ASSERT_NEAR(pose.x, 0.05 + (0.3 * std::cos(0.157) * 0.1) + (0.5 * std::cos(-0.157) * 0.1), 1e-4); 
-  ASSERT_NEAR(pose.y, 0.0  + (0.3 * std::sin(0.157) * 0.1) + (0.5 * std::sin(-0.157) * 0.1), 1e-4);
+  ASSERT_NEAR(pose.x, 0.05 + (0.3 * std::cos(0.157) * 0.1) + (0.5 * std::cos(-0.157) * 0.1), 1e-4);
+  ASSERT_NEAR(pose.y, 0.0 + (0.3 * std::sin(0.157) * 0.1) + (0.5 * std::sin(-0.157) * 0.1), 1e-4);
   ASSERT_NEAR(pose.yaw, -0.157, 1e-4);
 }
-
 
 
 // Identity一致確認ロジックのテスト
