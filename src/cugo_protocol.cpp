@@ -132,15 +132,17 @@ bool CugoProtocol::deserialize(
 
       // IDのチェック
     if (body_pid != out_state.product_id) {
-      error_msg = "Product ID Mismatch. Header: " + std::to_string(out_state.product_id) +
-        ", Body: " + std::to_string(body_pid);
-      return false;
+      // プロダクトIDが不一致でも、通信は可能なので false を返さない
+      // error_msg = "Product ID Mismatch. Header: " + std::to_string(out_state.product_id) +
+      //   ", Body: " + std::to_string(body_pid);
+      // return false;
     }
 
     if (body_rid != out_state.robot_id) {
-      error_msg = "Robot ID Mismatch. Header: " + std::to_string(out_state.robot_id) +
-        ", Body: " + std::to_string(body_rid);
-      return false;
+      // ロボットIDが不一致でも、通信は可能なので false を返さない
+      // error_msg = "Robot ID Mismatch. Header: " + std::to_string(out_state.robot_id) +
+      //   ", Body: " + std::to_string(body_rid);
+      // return false;
     }
 
       // プロトコル整合性のチェック
