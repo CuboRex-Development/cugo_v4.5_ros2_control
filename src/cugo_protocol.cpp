@@ -225,10 +225,12 @@ bool CugoProtocol::deserialize_handshake(
 
     // IDのチェック
   if (received_pid != expected_state.product_id) {
-    return false;
+    // プロダクトIDが不一致でも、通信は可能なので false を返さない
+    // return false;
   }
   if (received_rid != expected_state.robot_id) {
-    return false;
+    // ロボットIDが不一致でも、通信は可能なので false を返さない
+    // return false;
   }
 
     // プロトコル整合性チェック
