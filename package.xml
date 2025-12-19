@@ -4,7 +4,7 @@
   <name>cugo_v4_5_ros2_control</name>
   <version>0.0.0</version>
   <description>This package drives CuGo with ROS control signals.</description>
-  <maintainer email="nakamura@cuborex.com">yuta</maintainer>
+  <maintainer email="nakamura@cuborex.com">yuki</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
