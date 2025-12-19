@@ -15,13 +15,13 @@
 */
 
 #include <gtest/gtest.h>
-#include "cugo_ros2_control2/serial.hpp"
+#include "cugo_v4_5_ros2_control/serial.hpp"
 #include <vector>
 #include <string>
 #include <fstream>
 #include <thread>
 
-using namespace cugo_ros2_control2;
+using namespace cugo_v4_5_ros2_control;
 
 // テストフィクスチャ
 class SerialTest : public ::testing::Test

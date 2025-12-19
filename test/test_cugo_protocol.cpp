@@ -16,13 +16,13 @@
 
 
 #include <gtest/gtest.h>
-#include "cugo_ros2_control2/cugo_protocol.hpp"
+#include "cugo_v4_5_ros2_control/cugo_protocol.hpp"
 #include <vector>
 #include <cstring>
 #include <limits>
 #include <cmath>
 
-using namespace cugo_ros2_control2;
+using namespace cugo_v4_5_ros2_control;
 
 // テストフィクスチャ
 class CugoProtocolTest : public ::testing::Test {

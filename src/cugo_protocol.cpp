@@ -6,12 +6,12 @@
 
 */
 
-#include "cugo_ros2_control2/cugo_protocol.hpp"
+#include "cugo_v4_5_ros2_control/cugo_protocol.hpp"
 
 #include <cstring>   // for memcpy
 #include <algorithm> // for std::find
 
-namespace cugo_ros2_control2
+namespace cugo_v4_5_ros2_control
 {
 
 std::vector<uint8_t> CugoProtocol::serialize(const ControlCommand & cmd, size_t packet_size)
@@ -281,7 +281,7 @@ std::vector<uint8_t> CugoProtocol::encode_cobs(const std::vector<uint8_t> & raw)
 {
   const size_t source_size = raw.size();
   if (source_size == 0) {
-    return {0x01, 0x00}
+    return {0x01, 0x00};
   }
 
   size_t max_encoded_size = source_size + (source_size / 254) + 1;
@@ -320,7 +320,7 @@ std::vector<uint8_t> CugoProtocol::encode_cobs(const std::vector<uint8_t> & raw)
 std::vector<uint8_t> CugoProtocol::decode_cobs(const std::vector<uint8_t> & encoded)
 {
   if (encoded.empty()) {
-    return {}
+    return {};
   }
 
   size_t end_pos = encoded.size();
@@ -328,7 +328,7 @@ std::vector<uint8_t> CugoProtocol::decode_cobs(const std::vector<uint8_t> & enco
     end_pos--;
   }
   if (end_pos == 0) {
-    return {}
+    return {};
   }
 
   const std::vector<uint8_t> encoded_body(encoded.begin(), encoded.begin() + end_pos);
@@ -343,14 +343,14 @@ std::vector<uint8_t> CugoProtocol::decode_cobs(const std::vector<uint8_t> & enco
 
       // エラー: コード0はありえない -> 空を返して呼び出し元でハンドリング
     if (code == 0) {
-      return {}
+      return {};
     }
 
     read_index++;
 
     for (uint8_t i = 1; i < code; i++) {
       if (read_index >= source_size) {
-        return {}
+        return {};
       }              // データ不足エラー
       decoded.push_back(encoded_body[read_index++]);
     }
@@ -415,4 +415,4 @@ int32_t CugoProtocol::bin_to_int32(const unsigned char * data)
   return value;
 }
 
-} // namespace cugo_ros2_control2
+} // namespace cugo_v4_5_ros2_control

@@ -14,9 +14,9 @@
    limitations under the License.
 */
 
-#include "cugo_ros2_control2/serial.hpp"
+#include "cugo_v4_5_ros2_control/serial.hpp"
 
-namespace cugo_ros2_control2
+namespace cugo_v4_5_ros2_control
 {
 
 Serial::Serial(uint8_t delimiter)
@@ -232,4 +232,4 @@ void Serial::handle_write(
   }
 }
 
-} // namespace cugo_ros2_control2
+} // namespace cugo_v4_5_ros2_control

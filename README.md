@@ -1,6 +1,6 @@
 ![image](https://github.com/user-attachments/assets/be603edd-43dd-42b7-8215-2a89df03e3c2)
 
-# cugo_ros2_control2
+# cugo_v4_5_ros2_control
 
 クローラロボット開発プラットフォームのROS 2ノードです。
 
@@ -113,7 +113,7 @@ launchファイルのパラメータを変更することで微調整するこ�
 $ sudo chmod 777 /dev/ttyACM0
 
 # launch ファイルを実行
-$ ros2 launch cugo_ros2_control2 cugov4.5_ros2_control_launch.py
+$ ros2 launch cugo_v4_5_ros2_control cugov4.5_ros2_control_launch.py
 ~~~
 #### クローラロボット開発プラットフォーム CuGo V4の方
 付属のRaspberryPiPicoとUSBケーブルで接続をしたのち、お客様環境にあった権限設定をしてからlaunchファイルを実行してください。
@@ -124,7 +124,7 @@ $ ros2 launch cugo_ros2_control2 cugov4.5_ros2_control_launch.py
 $ sudo chmod 777 /dev/ttyACM0
 
 # launch ファイルを実行
-$ ros2 launch cugo_ros2_control2 cugov4_ros2_control_launch.py
+$ ros2 launch cugo_v4_5_ros2_control cugov4_ros2_control_launch.py
 ~~~
 
 #### クローラロボット開発プラットフォーム CuGo V3iの方
@@ -136,7 +136,7 @@ $ ros2 launch cugo_ros2_control2 cugov4_ros2_control_launch.py
 $ sudo chmod 777 /dev/ttyACM0
 
 # launch ファイルを実行
-$ ros2 launch cugo_ros2_control2 cugov3i_ros2_control_launch.py
+$ ros2 launch cugo_v4_5_ros2_control cugov3i_ros2_control_launch.py
 ~~~
 
 #### 
@@ -231,7 +231,7 @@ CuGoを活用したロボットでTFを構築するためにxacroを利用しま
 - 部品を追加したサンプルとしてのurdfの`mid360.urdf.xacro` (MID-360は製品には付属していません。コメントアウトで無効化されています)
 が格納されています。
 ~~~
-cugo_ros2_control2
+cugo_v4_5_ros2_control
 └── urdf
     ├── my_cugo_robot.urdf.xacro
     └── parts

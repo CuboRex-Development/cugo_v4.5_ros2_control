@@ -14,9 +14,9 @@
    limitations under the License.
 */
 
-#include "cugo_ros2_control2/cugo.hpp"
+#include "cugo_v4_5_ros2_control/cugo.hpp"
 
-namespace cugo_ros2_control2
+namespace cugo_v4_5_ros2_control
 {
 
 CuGo::CuGo()
@@ -138,4 +138,4 @@ const std::array<double, 36> & CuGo::get_twist_covariance() const
   return twist_covariance_;
 }
 
-} // namespace cugo_ros2_control2
+} // namespace cugo_v4_5_ros2_control

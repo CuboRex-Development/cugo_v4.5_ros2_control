@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#ifndef CUGO_ROS2_CONTROL2_CUGO_HPP
-#define CUGO_ROS2_CONTROL2_CUGO_HPP
-#include "cugo_ros2_control2/cugo_protocol.hpp"
+#ifndef CUGO_V4_5_ROS2_CONTROL_CUGO_HPP
+#define CUGO_V4_5_ROS2_CONTROL_CUGO_HPP
+#include "cugo_v4_5_ros2_control/cugo_protocol.hpp"
 #include <cmath>
 #include <array>
 #include <vector>
 
-namespace cugo_ros2_control2
+namespace cugo_v4_5_ros2_control
 {
 
 class CuGo
@@ -81,5 +81,5 @@ private:
   std::array<double, 36> twist_covariance_;
 };
 
-}  // namespace cugo_ros2_control2
+}  // namespace cugo_v4_5_ros2_control
 #endif

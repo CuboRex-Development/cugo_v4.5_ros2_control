@@ -13,8 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#ifndef CUGO_ROS2_CONTROL2_SERIAL_HPP
-#define CUGO_ROS2_CONTROL2_SERIAL_HPP
+#ifndef CUGO_V4_5_ROS2_CONTROL_SERIAL_HPP
+#define CUGO_V4_5_ROS2_CONTROL_SERIAL_HPP
 
 #include <algorithm>
 #include <array>
@@ -32,7 +32,7 @@
 #include <vector>
 #include <optional>
 
-namespace cugo_ros2_control2
+namespace cugo_v4_5_ros2_control
 {
 
 class Serial
@@ -73,5 +73,5 @@ private:
   void handle_write(const boost::system::error_code & error, std::size_t bytes_transferred);
 };
 
-}  // namespace cugo_ros2_control2
-#endif  // CUGO_ROS2_CONTROL2_SERIAL_HPP
+}  // namespace cugo_v4_5_ros2_control
+#endif  // CUGO_V4_5_ROS2_CONTROL_SERIAL_HPP

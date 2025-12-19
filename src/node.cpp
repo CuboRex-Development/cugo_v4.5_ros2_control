@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "cugo_ros2_control2/node.hpp"
+#include "cugo_v4_5_ros2_control/node.hpp"
 
-using namespace cugo_ros2_control2;
+using namespace cugo_v4_5_ros2_control;
 Node::Node()
-: rclcpp::Node("cugo_ros2_control2")
+: rclcpp::Node("cugo_v4_5_ros2_control")
 {
   // 設定用の一時変数定義
   double control_frequency;
@@ -29,7 +29,7 @@ Node::Node()
   double px, py, pz, pr, pp, pyaw;
   double tx, ty, tyaw;
 
-  RCLCPP_INFO(this->get_logger(), "cugo_ros2_control2 has started.");
+  RCLCPP_INFO(this->get_logger(), "cugo_v4_5_ros2_control has started.");
 
   // launchファイルからパラメータを取得
   this->declare_parameter("odom_frame_id", "odom");

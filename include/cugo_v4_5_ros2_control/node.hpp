@@ -14,8 +14,8 @@
    limitations under the License.
 */
 
-#ifndef CUGO_ROS2_CONTROL2_NODE_HPP
-#define CUGO_ROS2_CONTROL2_NODE_HPP
+#ifndef CUGO_V4_5_ROS2_CONTROL_NODE_HPP
+#define CUGO_V4_5_ROS2_CONTROL_NODE_HPP
 
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <geometry_msgs/msg/twist.hpp>
@@ -26,16 +26,16 @@
 #include <mutex>
 #include <vector>
 
-#include "cugo_ros2_control2/cugo.hpp"
-#include "cugo_ros2_control2/serial.hpp"
-#include "cugo_ros2_control2/cugo_protocol.hpp"
+#include "cugo_v4_5_ros2_control/cugo.hpp"
+#include "cugo_v4_5_ros2_control/serial.hpp"
+#include "cugo_v4_5_ros2_control/cugo_protocol.hpp"
 #include "tf2/LinearMath/Matrix3x3.h"
 
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/transform_broadcaster.h"
 
-namespace cugo_ros2_control2
+namespace cugo_v4_5_ros2_control
 {
 
   // 本ノードがサポートするプロダクトIDの範囲
@@ -77,8 +77,8 @@ private:
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   // インスタンス
-  std::unique_ptr<cugo_ros2_control2::CuGo> cugo_;
-  std::shared_ptr<cugo_ros2_control2::Serial> serial_;
+  std::unique_ptr<cugo_v4_5_ros2_control::CuGo> cugo_;
+  std::shared_ptr<cugo_v4_5_ros2_control::Serial> serial_;
 
   // データ共有
   ConnectionState connection_state_{ConnectionState::CONNECTED};
@@ -114,5 +114,5 @@ private:
   double handshake_retry_interval_{2.0};
 };
 
-}  // namespace cugo_ros2_control2
-#endif  // CUGO_ROS2_CONTROL2_NODE_HPP
+}  // namespace cugo_v4_5_ros2_control
+#endif  // CUGO_V4_5_ROS2_CONTROL_NODE_HPP

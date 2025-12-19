@@ -16,11 +16,11 @@
 
 #include <gtest/gtest.h>
 #include <rclcpp/rclcpp.hpp>
-#include "cugo_ros2_control2/node.hpp"
+#include "cugo_v4_5_ros2_control/node.hpp"
 #include <memory>
 #include <chrono>
 
-using namespace cugo_ros2_control2;
+using namespace cugo_v4_5_ros2_control;
 using namespace std::chrono_literals;
 
 class NodeTest : public ::testing::Test
@@ -71,7 +71,7 @@ TEST_F(NodeTest, test_initialization)
   });
 
   if (node) {
-    EXPECT_STREQ(node->get_name(), "cugo_ros2_control2");
+    EXPECT_STREQ(node->get_name(), "cugo_v4_5_ros2_control");
 
     // パラメータが正しく宣言されているか
     EXPECT_TRUE(node->has_parameter("product_id"));

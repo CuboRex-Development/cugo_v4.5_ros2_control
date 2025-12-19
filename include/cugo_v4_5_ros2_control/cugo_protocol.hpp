@@ -5,8 +5,8 @@
    通信プロトコル定義および変換ロジック
 */
 
-#ifndef CUGO_ROS2_CONTROL2_CUGO_PROTOCOL_HPP
-#define CUGO_ROS2_CONTROL2_CUGO_PROTOCOL_HPP
+#ifndef CUGO_V4_5_ROS2_CONTROL_CUGO_PROTOCOL_HPP
+#define CUGO_V4_5_ROS2_CONTROL_CUGO_PROTOCOL_HPP
 
 #include <vector>
 #include <cstdint>
@@ -15,7 +15,7 @@
 #include <cmath>
 #include <limits>
 
-namespace cugo_ros2_control2
+namespace cugo_v4_5_ros2_control
 {
 
   // 定数定義
@@ -174,6 +174,6 @@ private:
   static int32_t bin_to_int32(const unsigned char * data);
 };
 
-} // namespace cugo_ros2_control2
+} // namespace cugo_v4_5_ros2_control
 
-#endif // CUGO_ROS2_CONTROL2_CUGO_PROTOCOL_HPP
+#endif // CUGO_V4_5_ROS2_CONTROL_CUGO_PROTOCOL_HPP

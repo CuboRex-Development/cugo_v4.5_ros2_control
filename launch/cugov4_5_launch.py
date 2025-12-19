@@ -19,7 +19,7 @@ def generate_launch_description():
 
     # ---- robot_state_publisher の設定 ----
     # パッケージの共有ディレクトリのパスを取得
-    pkg_share = get_package_share_directory('cugo_ros2_control2')
+    pkg_share = get_package_share_directory('cugo_v4_5_ros2_control')
 
     # トップレベルのxacroファイルへのパス
     xacro_file = os.path.join(pkg_share, 'urdf', 'my_cugo_robot.urdf.xacro')
@@ -34,7 +34,7 @@ def generate_launch_description():
         parameters=[robot_description_config]
     )
 
-    # ---- cugo_ros2_control2 の設定 ----
+    # ---- cugo_v4_5_ros2_control の設定 ----
     # パラメータの定義
     parameters = {
         'odom_frame_id': 'odom',
@@ -67,9 +67,9 @@ def generate_launch_description():
 
     # ノードの定義
     cugo_node = Node(
-        package='cugo_ros2_control2',
-        executable='cugo_ros2_control2',
-        name='cugo_ros2_control2',
+        package='cugo_v4_5_ros2_control',
+        executable='cugo_v4_5_ros2_control',
+        name='cugo_v4_5_ros2_control',
         output='screen',
         parameters=[parameters],
         emulate_tty=True,

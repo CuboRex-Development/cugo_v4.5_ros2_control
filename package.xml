@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>cugo_ros2_control2</name>
+  <name>cugo_v4_5_ros2_control</name>
   <version>0.0.0</version>
   <description>This package drives CuGo with ROS control signals.</description>
   <maintainer email="nakamura@cuborex.com">yuta</maintainer>

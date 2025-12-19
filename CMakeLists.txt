@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(cugo_ros2_control2)
+project(cugo_v4_5_ros2_control)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -74,10 +74,10 @@ ament_target_dependencies(node_lib
 # 実行ファイルの生成
 # ---------------------------------------------------------
 
-add_executable(cugo_ros2_control2 src/main.cpp)
-target_link_libraries(cugo_ros2_control2 node_lib cugo_lib serial_lib cugo_protocol_lib ${Boost_LIBRARIES})
+add_executable(cugo_v4_5_ros2_control src/main.cpp)
+target_link_libraries(cugo_v4_5_ros2_control node_lib cugo_lib serial_lib cugo_protocol_lib ${Boost_LIBRARIES})
 ament_target_dependencies(
-  cugo_ros2_control2
+  cugo_v4_5_ros2_control
   rclcpp
 )
 
@@ -86,7 +86,7 @@ ament_target_dependencies(
 # ---------------------------------------------------------
 
 install(TARGETS
-  cugo_ros2_control2
+  cugo_v4_5_ros2_control
   cugo_lib
   node_lib
   serial_lib
