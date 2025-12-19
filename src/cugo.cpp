@@ -137,4 +137,4 @@ const std::array<double, 36>& CuGo::get_twist_covariance() const
   return twist_covariance_;
 }
 
-} // namespace cugo_ros2_control2bool CuGo::match_identity(const RobotState& state) const
+} // namespace cugo_ros2_control2
