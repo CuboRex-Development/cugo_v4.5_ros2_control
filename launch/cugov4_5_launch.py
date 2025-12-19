@@ -46,12 +46,7 @@ def generate_launch_description():
         'serial_baudrate': 115200,
         'cmd_vel_timeout': 0.5,  # 秒
         'serial_timeout': 0.5,  # 秒
-        'tread': 0.145,  # unajuのトレッド幅
-        'l_wheel_radius': 0.0284,  # unajuのスプロケット半径
-        'r_wheel_radius': 0.0284,  # unajuのスプロケット半径
-        'reduction_ratio': 74.83,  # unajuのオリエンタルモータの減速比
-        'encoder_resolution': 48,  # unajuのオリエンタルモータのエンコーダホール数
-        'product_id': 10,  # unajuの識別子
+        'product_id': 10000,  # cugov4.5の識別子
 
         # 共分散の設定
         # SLAMやLocalizationで調整
@@ -66,6 +61,7 @@ def generate_launch_description():
 
         # ロボットの速度
         'twist_cov_linear_x': 0.0001,  # 0.01m^2
+        'twist_cov_linear_y': 0.0001,  # 0.01m^2
         'twist_cov_angular_z': 0.0001,  # 0.01m^2
     }
 

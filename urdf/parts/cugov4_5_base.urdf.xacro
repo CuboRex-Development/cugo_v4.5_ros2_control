@@ -22,7 +22,7 @@
     </link>
 
     <joint name="base_to_left_clawler_joint" type="continuous">
-      <origin xyz="0.0 0.188 0.03835" rpy="0 0 0"/>
+      <origin xyz="0.0 0.190 0.03835" rpy="0 0 0"/>
       <parent link="base_link"/>
       <child link="left_clawler_link"/>
       <axis xyz="0 1 0"/>
@@ -38,7 +38,7 @@
     </link>
 
     <joint name="base_to_right_clawler_joint" type="continuous">
-      <origin xyz="0.0 -0.188 0.03835" rpy="0 0 0"/>
+      <origin xyz="0.0 -0.190 0.03835" rpy="0 0 0"/>
       <parent link="base_link"/>
       <child link="right_crawler_link"/>
       <axis xyz="0 1 0"/>
