@@ -52,17 +52,17 @@ def generate_launch_description():
         # SLAMやLocalizationで調整
         # オドメトリで悪影響がある場合は調整してください
         # オドメトリの自己位置
-        'pose_cov_x': 0.025,  # 0.05m^2
-        'pose_cov_y': 0.025,  # 0.05m^2
+        'pose_cov_x': 0.04,  # 0.2m^2
+        'pose_cov_y': 0.04,  # 0.2m^2
         'pose_cov_z': 1e9,
         'pose_cov_roll': 1e9,
         'pose_cov_pitch': 1e9,
         'pose_cov_yaw': 0.01,  # 0.1rad^2
 
         # ロボットの速度
-        'twist_cov_linear_x': 0.0001,  # 0.01m^2
-        'twist_cov_linear_y': 0.0001,  # 0.01m^2
-        'twist_cov_angular_z': 0.0001,  # 0.01m^2
+        'twist_cov_linear_x': 0.0025,  # 0.05m^2
+        'twist_cov_linear_y': 0.0025,  # 0.05m^2
+        'twist_cov_angular_z': 1e9,
     }
 
     # ノードの定義

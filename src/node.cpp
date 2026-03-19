@@ -45,15 +45,15 @@ Node::Node()
   this->declare_parameter("robot_id", 0);
 
   // 共分散
-  this->declare_parameter("pose_cov_x", 0.05);
-  this->declare_parameter("pose_cov_y", 0.05);
+  this->declare_parameter("pose_cov_x", 0.04);
+  this->declare_parameter("pose_cov_y", 0.04);
   this->declare_parameter("pose_cov_z", 1e9);
   this->declare_parameter("pose_cov_roll", 1e9);
   this->declare_parameter("pose_cov_pitch", 1e9);
-  this->declare_parameter("pose_cov_yaw", 0.1);
-  this->declare_parameter("twist_cov_linear_x", 0.001);
-  this->declare_parameter("twist_cov_linear_y", 0.001);
-  this->declare_parameter("twist_cov_angular_z", 0.001);
+  this->declare_parameter("pose_cov_yaw", 0.01);
+  this->declare_parameter("twist_cov_linear_x", 0.0025);
+  this->declare_parameter("twist_cov_linear_y", 0.0025);
+  this->declare_parameter("twist_cov_angular_z", 1e9);
 
   // パラメータ取得
   this->get_parameter("odom_frame_id", odom_frame_id_);
