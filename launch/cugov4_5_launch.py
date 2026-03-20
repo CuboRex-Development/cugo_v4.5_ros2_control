@@ -2,10 +2,16 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction, TimerAction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 import xacro
+
+# WiFiモード時に生成する仮想シリアルポートのパス
+VSERIAL_PATH = '/tmp/cugo_vserial'
+
+# WiFiモード時にノード起動を遅延させる秒数（socatがPTYを生成するまでの待機）
+WIFI_NODE_DELAY_SEC = 2.0
 
 
 def generate_launch_description():
@@ -16,6 +22,26 @@ def generate_launch_description():
         description='Log level: debug, info, warn, error, fatal'
     )
     log_level = LaunchConfiguration('log_level')
+
+    # 通信方式の選択
+    comm_type_arg = DeclareLaunchArgument(
+        'comm_type',
+        # default_value='wifi',
+        default_value='serial',
+        description='通信方式: "serial"（デフォルト）または "wifi"'
+    )
+
+    # WiFiモード用パラメータ（comm_type:="wifi" のときのみ使用）
+    tcp_host_arg = DeclareLaunchArgument(
+        'tcp_host',
+        default_value='192.168.1.100',
+        description='WiFiモード時の接続先IPアドレス'
+    )
+    tcp_port_arg = DeclareLaunchArgument(
+        'tcp_port',
+        default_value='8080',
+        description='WiFiモード時の接続先ポート番号'
+    )
 
     # ---- robot_state_publisher の設定 ----
     # パッケージの共有ディレクトリのパスを取得
@@ -70,19 +96,53 @@ def generate_launch_description():
         'twist_cov_angular_z': 1e9,
     }
 
-    # ノードの定義
-    cugo_node = Node(
-        package='cugo_v4_5_ros2_control',
-        executable='cugo_v4_5_ros2_control',
-        name='cugo_v4_5_ros2_control',
-        output='screen',
-        parameters=[parameters],
-        emulate_tty=True,
-        arguments=['--ros-args', '--log-level', log_level]
-    )
+    def launch_setup(context, *args, **kwargs):
+        comm_type = LaunchConfiguration('comm_type').perform(context)
+        tcp_host = LaunchConfiguration('tcp_host').perform(context)
+        tcp_port = LaunchConfiguration('tcp_port').perform(context)
+
+        # 通信方式に応じてシリアルポートを決定
+        # WiFiモードではsocatが生成する仮想シリアルポートを使用
+        if comm_type == 'wifi':
+            serial_port = VSERIAL_PATH
+        else:
+            serial_port = parameters['serial_port']
+
+        # ノードの定義
+        cugo_node = Node(
+            package='cugo_v4_5_ros2_control',
+            executable='cugo_v4_5_ros2_control',
+            name='cugo_v4_5_ros2_control',
+            output='screen',
+            parameters=[{**parameters, 'serial_port': serial_port}],
+            emulate_tty=True,
+            arguments=['--ros-args', '--log-level', log_level]
+        )
+
+        if comm_type == 'wifi':
+            # socatで仮想シリアルポートを生成し、TCP接続にブリッジ
+            # PTYの生成を待つため、cugo_nodeはWIFI_NODE_DELAY_SEC秒遅延起動
+            socat_process = ExecuteProcess(
+                cmd=[
+                    'socat',
+                    f'PTY,link={VSERIAL_PATH},raw,echo=0',
+                    f'TCP:{tcp_host}:{tcp_port}'
+                ],
+                output='screen',
+                name='socat_wifi_bridge'
+            )
+            return [
+                socat_process,
+                TimerAction(period=WIFI_NODE_DELAY_SEC, actions=[cugo_node])
+            ]
+        else:
+            return [cugo_node]
 
     return LaunchDescription([
         log_level_arg,  # DeclareLaunchArgumentをLaunchDescriptionに含める
-        cugo_node,
-        robot_state_publisher_node
+        comm_type_arg,
+        tcp_host_arg,
+        tcp_port_arg,
+        robot_state_publisher_node,
+        OpaqueFunction(function=launch_setup)
     ])

@@ -44,6 +44,11 @@ Subscribeした`/cmd_vel`をロボットのマイコンに送信します。
 - OS: Ubuntu 24.04.4 LTS / ROS Distribution: ROS 2 Jazzy Jalisco
 - xacro
 - robot_state_publisher
+- socat（WiFi接続モードを使用する場合のみ）
+
+  ```bash
+  sudo apt install socat
+  ```
 
 
 # Installation
@@ -84,6 +89,22 @@ $ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
 launchファイルのパラメータを変更することで微調整することもできます。詳細は[Parameters](#parameters)の項目を参照してください。
 
 
+#### WiFi接続モードでの起動
+
+USB接続の代わりにWiFi経由でロボットと通信することができます。
+ロボット側の設定は[cugo_v4.5_ros2_motorcontroller2](null)を参照してください。
+
+`comm_type:=wifi` を指定し、接続先のIPアドレスとポート番号を指定して起動します。
+
+```bash
+$ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py \
+    comm_type:=wifi tcp_host:=192.168.1.100 tcp_port:=8080
+```
+
+WiFiモードでは、launchファイルが内部でsocatを起動し、`/tmp/cugo_vserial` に仮想シリアルポートを生成します。
+ROS 2ノードはこの仮想シリアルポートを通じてロボットと通信するため、C++コードの変更は不要です。
+
+
 #### ロボット側の操作
 クローラロボット開発プラットフォーム付属のRaspberryPiPicoに[こちらのスケッチ](https://github.com/CuboRex-Development/cugo_ros2_motorcontroller2)を書き込み、ROS 2 PCとRaspberryPiPicoをUSBケーブルで接続してください。
 その後ROSパッケージを実行してください。自動で通信開始します。
@@ -105,6 +126,14 @@ launchファイルのパラメータを変更することで微調整するこ�
 - `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/foxy/api/geometry_msgs/msg/Twist.html))
 
 ## Parameters
+
+- `comm_type (string, default: serial)`
+  - 通信方式の選択。`serial`（USB経由のシリアル通信）または `wifi`（WiFi経由のTCP通信）を指定します
+  - `wifi` を指定した場合、launchファイルが内部でsocatを起動し `/tmp/cugo_vserial` に仮想シリアルポートを生成します
+- `tcp_host (string, default: 192.168.1.100)`
+  - `comm_type:=wifi` のときのみ使用。接続先のIPアドレス
+- `tcp_port (string, default: 8080)`
+  - `comm_type:=wifi` のときのみ使用。接続先のポート番号
 - `odom_frame_id (string, default: odom)`
   - オドメトリフレーム名の指定
 - `base_link_frame_id (string, default: base_link)`
