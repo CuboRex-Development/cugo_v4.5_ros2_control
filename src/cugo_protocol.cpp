@@ -180,9 +180,9 @@ std::vector<uint8_t> CugoProtocol::serialize_handshake(const RobotState & expect
 
     // ボディへのデータ代入
           // プロダクトID, ロボットID の書き込み
-  std::memcpy(raw_packet.data() + BODY_OFFSET_PRODUCT_ID, &expected_state.product_id,
+  std::memcpy(raw_packet.data() + HEADER_SIZE + BODY_OFFSET_PRODUCT_ID, &expected_state.product_id,
       sizeof(uint16_t));
-  std::memcpy(raw_packet.data() + BODY_OFFSET_ROBOT_ID, &expected_state.robot_id, sizeof(uint16_t));
+  std::memcpy(raw_packet.data() + HEADER_SIZE + BODY_OFFSET_ROBOT_ID, &expected_state.robot_id, sizeof(uint16_t));
 
 
     // チェックサムの計算
