@@ -321,6 +321,78 @@ void Node::control_loop()
   status_msg.data = is_hs_done_local;
   handshake_pub_->publish(status_msg);
 
+  // --- 再接続処理 (ハンドシェイク前に実行し、接続状態に関わらず到達できるようにする) ---
+  if (connection_state_ == ConnectionState::RECONNECTING) {
+    // 3秒に一回だけ再接続を試みる
+    if ((now - last_reconnect_attmpt_time_).seconds() > 3.0) {
+      RCLCPP_INFO(this->get_logger(), "Trying to reconnect...");
+      bool reconnect_success = false;
+      try {
+        if (serial_->reconnect(serial_port, serial_baudrate)) {
+          reconnect_success = true;
+        }
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(this->get_logger(), "Reconnect failed: %s", e.what());
+      }
+
+      if (reconnect_success) {
+        RCLCPP_INFO(this->get_logger(), "Reconnect successful! Restarting handshake.");
+        connection_state_ = ConnectionState::CONNECTED;
+
+        std::lock_guard<std::mutex> lock(data_mutex_);
+        is_handshake_done_ = false;
+        handshake_state_ = HandshakeState::INIT;
+        is_first_serial_data_ = true;
+        last_serial_receive_time_ = now;
+        last_cmd_vel_time_ = now;  // cmd_velタイムアウトをリセット
+      }
+      last_reconnect_attmpt_time_ = now;
+    }
+
+    // 再接続待機中はゼロ速度オドメトリを発行して終了
+    // (再接続成功時は connection_state_ が CONNECTED に戻るためこのブロックに入らない)
+    if (connection_state_ == ConnectionState::RECONNECTING) {
+      RCLCPP_WARN(this->get_logger(), "シリアル通信未達。接続を確認してください。");
+      Pose2D current_pose;
+      {
+        std::lock_guard<std::mutex> lock(data_mutex_);
+        current_pose = cugo_->get_pose();
+      }
+
+      geometry_msgs::msg::TransformStamped t;
+      t.header.stamp = now;
+      t.header.frame_id = odom_frame_id_;
+      t.child_frame_id = base_link_frame_id_;
+      t.transform.translation.x = current_pose.x;
+      t.transform.translation.y = current_pose.y;
+      t.transform.translation.z = 0.0;
+
+      tf2::Quaternion q;
+      q.setRPY(0, 0, current_pose.yaw);
+      t.transform.rotation = tf2::toMsg(q);
+      tf_broadcaster_->sendTransform(t);
+
+      nav_msgs::msg::Odometry lost_odom;
+      lost_odom.header.stamp = now;
+      lost_odom.header.frame_id = odom_frame_id_;
+      lost_odom.child_frame_id = base_link_frame_id_;
+      lost_odom.pose.pose.position.x = current_pose.x;
+      lost_odom.pose.pose.position.y = current_pose.y;
+      lost_odom.pose.pose.orientation = t.transform.rotation;
+      lost_odom.twist.twist.linear.x = 0.0;
+      lost_odom.twist.twist.linear.y = 0.0;
+      lost_odom.twist.twist.angular.z = 0.0;
+      lost_odom.pose.covariance.fill(1e9);
+      lost_odom.twist.covariance.fill(1e9);
+      odom_pub_->publish(lost_odom);
+
+      if (callback_debug_log_) {
+        RCLCPP_DEBUG(this->get_logger(), "control_loop() zero /cmd_vel published");
+      }
+      return;
+    }
+  }
+
   // --- ハンドシェイク処理 ---
   if (!is_hs_done_local) {
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -457,83 +529,6 @@ void Node::control_loop()
       std::lock_guard<std::mutex> lock(data_mutex_);
       is_handshake_done_ = false;
       handshake_state_ = HandshakeState::INIT;
-    }
-  } else if (connection_state_ == ConnectionState::RECONNECTING) {
-    // 3秒に一回だけ再接続を試みる
-    if ((now - last_reconnect_attmpt_time_).seconds() > 3.0) {
-      RCLCPP_INFO(this->get_logger(), "Trying to reconnect...");
-      bool reconnect_success = false;
-      try {
-        if (serial_->reconnect(serial_port, serial_baudrate)) {
-          reconnect_success = true;
-        }
-      } catch (const std::exception & e) {
-        RCLCPP_WARN(this->get_logger(), "Reconnect failed: %s", e.what());
-      }
-
-      if (reconnect_success) {
-        RCLCPP_INFO(this->get_logger(), "Reconnect successful! Restarting handshake.");
-        connection_state_ = ConnectionState::CONNECTED;
-
-        std::lock_guard<std::mutex> lock(data_mutex_);
-        is_handshake_done_ = false;
-        handshake_state_ = HandshakeState::INIT;
-        is_first_serial_data_ = true;
-        last_serial_receive_time_ = now;
-        last_cmd_vel_time_ = now;  // cmd_velタイムアウトをリセット
-      }
-      last_reconnect_attmpt_time_ = now;
-    }
-  }
-
-  // 通信切断時の処理 (タイムアウト時)
-  if (connection_state_ != ConnectionState::CONNECTED) {
-    RCLCPP_WARN(this->get_logger(), "シリアル通信未達。接続を確認してください。");
-    // Picoが機能不全の可能性。速度ゼロのオドメトリを発行して異常を知らせる。
-    // cugo_の現在位置を取得してメッセージを作る (ロック最小化)
-    Pose2D current_pose;
-    {
-      std::lock_guard<std::mutex> lock(data_mutex_);
-      current_pose = cugo_->get_pose();
-    }
-
-    // TF発行
-    geometry_msgs::msg::TransformStamped t;
-    t.header.stamp = now;
-    t.header.frame_id = odom_frame_id_;
-    t.child_frame_id = base_link_frame_id_;
-    t.transform.translation.x = current_pose.x;
-    t.transform.translation.y = current_pose.y;
-    t.transform.translation.z = 0.0;
-
-    tf2::Quaternion q;
-    q.setRPY(0, 0, current_pose.yaw);
-    t.transform.rotation = tf2::toMsg(q);
-    tf_broadcaster_->sendTransform(t);
-
-    // Odomメッセージ構築 (速度0, 共分散大)
-    nav_msgs::msg::Odometry lost_odom;
-    lost_odom.header.stamp = now;
-    lost_odom.header.frame_id = odom_frame_id_;
-    lost_odom.child_frame_id = base_link_frame_id_;
-    lost_odom.pose.pose.position.x = current_pose.x;
-    lost_odom.pose.pose.position.y = current_pose.y;
-    lost_odom.pose.pose.orientation = t.transform.rotation;
-
-    // 速度ゼロ
-    lost_odom.twist.twist.linear.x = 0.0;
-    lost_odom.twist.twist.linear.y = 0.0;
-    lost_odom.twist.twist.angular.z = 0.0;
-
-    // 共分散を非常に大きな値に設定 (1e9)
-    lost_odom.pose.covariance.fill(1e9);
-    lost_odom.twist.covariance.fill(1e9);
-
-    // パブリッシュ
-    odom_pub_->publish(lost_odom);
-
-    if (callback_debug_log_) {
-      RCLCPP_DEBUG(this->get_logger(), "control_loop() zero /cmd_vel published");
     }
   }
 }
