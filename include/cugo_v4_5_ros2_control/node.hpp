@@ -113,8 +113,11 @@ private:
   double handshake_timeout_{1.0};
   double handshake_retry_interval_{2.0};
 
-  // デバッグ用: シリアル通信内容をログ出力するかどうか
-  bool serial_debug_log_{false};
+  // デバッグ用フラグ
+  bool serial_debug_log_{false};    // シリアル通信パケット内容 ([TX]/[RX])
+  bool callback_debug_log_{false};  // コールバック・制御ループの実行フロー
+  bool odom_debug_log_{false};      // オドメトリ・速度データ
+  bool param_debug_log_{false};     // 起動時のデバイスIDパラメータ確認
 };
 
 }  // namespace cugo_v4_5_ros2_control

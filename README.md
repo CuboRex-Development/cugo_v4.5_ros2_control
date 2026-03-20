@@ -158,9 +158,18 @@ launchファイルのパラメータを変更することで微調整するこ�
 - `robot_id (uint16_t, default: 0)`
   - [ロボットID](#ロボットid) を参照
 - `serial_debug_log (bool, default: false)`
-  - `true` にすると、RaspberryPi Picoとの送受信パケットをDEBUGレベルでログ出力します
+  - `true` にすると、RaspberryPi Picoとの送受信パケットをDEBUGレベルでログ出力します[^debug-log]
   - 送信パケットは `[TX]`、受信パケットは `[RX]` のプレフィックスで区別されます
-  - 出力を確認するにはログレベルをdebugに設定する必要があります
+- `callback_debug_log (bool, default: false)`
+  - `true` にすると、コールバック・制御ループの実行フローをDEBUGレベルでログ出力します[^debug-log]
+  - `serial_data_callback()` の開始・Publish完了、`control_loop()` の開始・通信切断時のゼロ速度Publish時に出力されます
+- `odom_debug_log (bool, default: false)`
+  - `true` にすると、オドメトリ・速度データをDEBUGレベルでログ出力します[^debug-log]
+  - 現在のX・Y座標・Yaw角、および線速度・角速度を出力します
+- `param_debug_log (bool, default: false)`
+  - `true` にすると、起動時のデバイスIDパラメータ（`product_id`・`robot_id`）をDEBUGレベルでログ出力します[^debug-log]
+
+[^debug-log]: 出力を確認するにはログレベルをdebugに設定する必要があります。
 
     ~~~bash
     ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug

@@ -47,6 +47,9 @@ Node::Node()
   this->declare_parameter("product_id", 10000);
   this->declare_parameter("robot_id", 0);
   this->declare_parameter("serial_debug_log", false);
+  this->declare_parameter("callback_debug_log", false);
+  this->declare_parameter("odom_debug_log", false);
+  this->declare_parameter("param_debug_log", false);
 
   // 共分散
   this->declare_parameter("pose_cov_x", 0.04);
@@ -72,6 +75,9 @@ Node::Node()
   this->get_parameter("product_id", pid);
   this->get_parameter("robot_id", rid);
   this->get_parameter("serial_debug_log", serial_debug_log_);
+  this->get_parameter("callback_debug_log", callback_debug_log_);
+  this->get_parameter("odom_debug_log", odom_debug_log_);
+  this->get_parameter("param_debug_log", param_debug_log_);
 
   this->get_parameter("pose_cov_x", px);
   this->get_parameter("pose_cov_y", py);
@@ -93,8 +99,10 @@ Node::Node()
   RCLCPP_INFO(this->get_logger(), "serial_baudrate: %d", serial_baudrate);
   RCLCPP_INFO(this->get_logger(), "cmd_vel_timeout: %f", cmd_vel_timeout_);
   RCLCPP_INFO(this->get_logger(), "serial_timeout: %f", serial_timeout_);
-  RCLCPP_DEBUG(this->get_logger(), "product_id: %d", pid);
-  RCLCPP_DEBUG(this->get_logger(), "robot_id: %d", rid);
+  if (param_debug_log_) {
+    RCLCPP_DEBUG(this->get_logger(), "product_id: %d", pid);
+    RCLCPP_DEBUG(this->get_logger(), "robot_id: %d", rid);
+  }
 
   // 本クラスで実装された通信がサポートされている製品かどうかを、product_idで確認
   // 範囲外の場合はエラーで終了
@@ -175,7 +183,9 @@ void Node::cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
 // シリアルデータ受信時のコールバック (Serialクラスから呼ばれる)
 void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
 {
-  RCLCPP_DEBUG(this->get_logger(), "serial_data_callback()");
+  if (callback_debug_log_) {
+    RCLCPP_DEBUG(this->get_logger(), "serial_data_callback()");
+  }
 
   if (serial_debug_log_) {
     std::ostringstream oss;
@@ -274,13 +284,17 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
   // （cugo_の状態はupdate_stateで更新済み）
   if (should_publish) {
     publish_odom_and_tf();
+  if (callback_debug_log_) {
     RCLCPP_DEBUG(this->get_logger(), "serial_data_callback() published");
+  }
   }
 }
 
 void Node::control_loop()
 {
-  RCLCPP_DEBUG(this->get_logger(), "control_loop()");
+  if (callback_debug_log_) {
+    RCLCPP_DEBUG(this->get_logger(), "control_loop()");
+  }
   auto now = this->get_clock()->now();
 
   // フラグのローカルコピーを取得
@@ -484,7 +498,9 @@ void Node::control_loop()
     // パブリッシュ
     odom_pub_->publish(lost_odom);
 
-    RCLCPP_DEBUG(this->get_logger(), "control_loop() zero /cmd_vel published");
+    if (callback_debug_log_) {
+      RCLCPP_DEBUG(this->get_logger(), "control_loop() zero /cmd_vel published");
+    }
   }
 }
 
@@ -543,10 +559,12 @@ void Node::publish_odom_and_tf()
   odom_pub_->publish(odom);
 
   // デバッグログ (ローカル変数 pose/state を使用してアクセス違反を回避)
-  RCLCPP_DEBUG(
-      this->get_logger(), "Odometry: X=%lf, Y=%lf, Yaw=%lf",
-      pose.x, pose.y, pose.yaw);
-  RCLCPP_DEBUG(
-      this->get_logger(), "Velocity: Linear=%lf, Angular=%lf",
-      state.linear_x, state.angular_z);
+  if (odom_debug_log_) {
+    RCLCPP_DEBUG(
+        this->get_logger(), "Odometry: X=%lf, Y=%lf, Yaw=%lf",
+        pose.x, pose.y, pose.yaw);
+    RCLCPP_DEBUG(
+        this->get_logger(), "Velocity: Linear=%lf, Angular=%lf",
+        state.linear_x, state.angular_z);
+  }
 }
