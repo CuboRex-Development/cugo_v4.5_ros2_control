@@ -345,6 +345,7 @@ void Node::control_loop()
         is_first_serial_data_ = true;
         last_serial_receive_time_ = now;
         last_cmd_vel_time_ = now;  // cmd_velタイムアウトをリセット
+        latest_cmd_vel_ = geometry_msgs::msg::Twist();  // 再接続後は速度ゼロから開始
       }
       last_reconnect_attmpt_time_ = now;
     }
