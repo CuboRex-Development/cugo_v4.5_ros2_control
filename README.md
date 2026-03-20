@@ -5,7 +5,7 @@
 CuGo V4.5 のROS 2ノードです。
 
 ROS 2 topicの`/cmd_vel`をSubscribeし、`/odom`をPublishします。
-セットでArduinoスケッチの[cugo_v4.5_ros2_motorcontroller2](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)、と使用します。
+セットでArduinoスケッチの[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)、と使用します。
 
 ROS 2 Humble以降でご利用いただけます。
 
@@ -31,7 +31,7 @@ ROS 2 プログラムとロボットのプログラムとの仲介を行いま�
 
 Subscribeした`/cmd_vel`をロボットのマイコンに送信します。
 
-また、[cugo_v4.5_ros2_motorcontroller2](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)が書き込まれたロボットのマイコンから、CRST01Aの計算したオドメトリを受け取ります。受け取ったオドメトリを`/odom`としてPublishします。
+また、[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)が書き込まれたロボットのマイコンから、CRST01Aの計算したオドメトリを受け取ります。受け取ったオドメトリを`/odom`としてPublishします。
 
 <!-- TODO:図の修正 -->
 <img width="2527" height="1116" alt="image" src="https://github.com/user-attachments/assets/a8950d77-9907-4d95-99be-b6ca8f536b85" />
@@ -90,7 +90,7 @@ launchファイルのパラメータを変更することで微調整するこ�
 #### WiFi接続モードでの起動
 
 USB接続の代わりにWiFi経由でロボットと通信することができます。
-ロボット側の設定は[cugo_v4.5_ros2_motorcontroller2](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)を参照してください。
+ロボット側の設定は[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)を参照してください。
 
 `comm_type:=wifi` を指定し、接続先のIPアドレスとポート番号を指定して起動します。
 
@@ -232,7 +232,7 @@ cugo_v4.5_ros2_control
 追記した後は`colcon build`を行ってください。追加したファイルが反映されます。
 
 # Protocol
-[cugo_v4.5_ros2_motorcontroller2](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)と、送信・受信ともにヘッダ8バイト・ボディ64バイトの合計72バイトから構成されるデータを通信しています。
+[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)と、送信・受信ともにヘッダ8バイト・ボディ64バイトの合計72バイトから構成されるデータを通信しています。
 ボディデータに格納されるデータの一覧は以下の通りになります。
 ボディの残りの領域は今後拡張できるように確保されているだけで、現在は00を送受信しています。
 
