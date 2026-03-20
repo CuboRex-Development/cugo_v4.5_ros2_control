@@ -112,6 +112,9 @@ private:
   bool is_handshake_done_{false};
   double handshake_timeout_{1.0};
   double handshake_retry_interval_{2.0};
+
+  // デバッグ用: シリアル通信内容をログ出力するかどうか
+  bool serial_debug_log_{false};
 };
 
 }  // namespace cugo_v4_5_ros2_control

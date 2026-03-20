@@ -16,6 +16,9 @@
 
 #include "cugo_v4_5_ros2_control/node.hpp"
 
+#include <iomanip>
+#include <sstream>
+
 using namespace cugo_v4_5_ros2_control;
 Node::Node()
 : rclcpp::Node("cugo_v4_5_ros2_control")
@@ -43,6 +46,7 @@ Node::Node()
   this->declare_parameter("serial_timeout", 0.5);  // 秒
   this->declare_parameter("product_id", 10000);
   this->declare_parameter("robot_id", 0);
+  this->declare_parameter("serial_debug_log", false);
 
   // 共分散
   this->declare_parameter("pose_cov_x", 0.04);
@@ -67,6 +71,7 @@ Node::Node()
   this->get_parameter("serial_timeout", serial_timeout_);
   this->get_parameter("product_id", pid);
   this->get_parameter("robot_id", rid);
+  this->get_parameter("serial_debug_log", serial_debug_log_);
 
   this->get_parameter("pose_cov_x", px);
   this->get_parameter("pose_cov_y", py);
@@ -171,6 +176,15 @@ void Node::cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
 void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
 {
   RCLCPP_DEBUG(this->get_logger(), "serial_data_callback()");
+
+  if (serial_debug_log_) {
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
+    for (auto byte : raw_packet) {
+      oss << " " << std::setw(2) << static_cast<int>(byte);
+    }
+    RCLCPP_DEBUG(this->get_logger(), "[RX] %zu bytes:%s", raw_packet.size(), oss.str().c_str());
+  }
   rclcpp::Time current_receive_time = this->get_clock()->now();
 
   // パブリッシュを実施するかどうかのフラグ
@@ -296,6 +310,16 @@ void Node::control_loop()
         // ハンドシェイク専用パケットの生成 (CuGo -> Protocol)
           std::vector<uint8_t> handshake_packet = cugo_->create_handshake_packet();
           if (!handshake_packet.empty()) {
+            if (serial_debug_log_) {
+              std::ostringstream oss;
+              oss << std::hex << std::setfill('0');
+              for (auto byte : handshake_packet) {
+                oss << " " << std::setw(2) << static_cast<int>(byte);
+              }
+              RCLCPP_DEBUG(
+                this->get_logger(), "[TX] %zu bytes:%s",
+                handshake_packet.size(), oss.str().c_str());
+            }
             serial_->write(handshake_packet);
             handshake_last_action_time_ = now;
             handshake_state_ = HandshakeState::WAITING_ACK;
@@ -361,6 +385,15 @@ void Node::control_loop()
   if (packet.empty()) {
     RCLCPP_ERROR(this->get_logger(), "Failed to serialize command packet.");
   } else {
+    if (serial_debug_log_) {
+      std::ostringstream oss;
+      oss << std::hex << std::setfill('0');
+      for (auto byte : packet) {
+        oss << " " << std::setw(2) << static_cast<int>(byte);
+      }
+      RCLCPP_DEBUG(
+        this->get_logger(), "[TX] %zu bytes:%s", packet.size(), oss.str().c_str());
+    }
     serial_->write(packet);
   }
 

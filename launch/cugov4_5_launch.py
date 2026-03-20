@@ -47,6 +47,7 @@ def generate_launch_description():
         'cmd_vel_timeout': 0.5,  # 秒
         'serial_timeout': 0.5,  # 秒
         'product_id': 10000,  # cugov4.5の識別子
+        'serial_debug_log': True,  # シリアル通信内容のデバッグログ出力
 
         # 共分散の設定
         # SLAMやLocalizationで調整

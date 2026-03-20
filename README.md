@@ -93,7 +93,7 @@ launchファイルのパラメータを変更することで微調整するこ�
 もし、うまく `/cmd_vel` 通りに走行を開始しない場合は、一度USBケーブルを抜き、
 ロボットの電源を入れなおしてから再度PCとRaspberryPiPicoをUSBケーブルで接続してください。
 
-
+  
 
 # Topics and Parameters
 ## Published Topics
@@ -157,6 +157,14 @@ launchファイルのパラメータを変更することで微調整するこ�
   - [プロダクトID](#プロダクトid) を参照
 - `robot_id (uint16_t, default: 0)`
   - [ロボットID](#ロボットid) を参照
+- `serial_debug_log (bool, default: false)`
+  - `true` にすると、RaspberryPi Picoとの送受信パケットをDEBUGレベルでログ出力します
+  - 送信パケットは `[TX]`、受信パケットは `[RX]` のプレフィックスで区別されます
+  - 出力を確認するにはログレベルをdebugに設定する必要があります
+
+    ~~~bash
+    ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug
+    ~~~
 
 上記のパラメータはlaunchファイルで設定されています。
 
