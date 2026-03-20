@@ -225,6 +225,16 @@ bool CugoProtocol::deserialize_handshake(
     return false;
   }
 
+    // ボディIDの復元
+  uint16_t body_pid, body_rid;
+  std::memcpy(&body_pid, decoded_data.data() + HEADER_SIZE + BODY_OFFSET_PRODUCT_ID, sizeof(uint16_t));
+  std::memcpy(&body_rid, decoded_data.data() + HEADER_SIZE + BODY_OFFSET_ROBOT_ID, sizeof(uint16_t));
+
+    // ヘッダとボディのIDの整合性チェック
+  if (body_pid != received_pid || body_rid != received_rid) {
+    return false;
+  }
+
     // IDのチェック
   if (received_pid != expected_state.product_id) {
     // プロダクトIDが不一致でも、通信は可能なので false を返さない
