@@ -47,6 +47,7 @@ Node::Node()
   this->declare_parameter("product_id", 10000);
   this->declare_parameter("robot_id", 0);
   this->declare_parameter("serial_debug_log", false);
+  this->declare_parameter("serial_raw_debug_log", false);
   this->declare_parameter("callback_debug_log", false);
   this->declare_parameter("odom_debug_log", false);
   this->declare_parameter("param_debug_log", false);
@@ -75,6 +76,7 @@ Node::Node()
   this->get_parameter("product_id", pid);
   this->get_parameter("robot_id", rid);
   this->get_parameter("serial_debug_log", serial_debug_log_);
+  this->get_parameter("serial_raw_debug_log", serial_raw_debug_log_);
   this->get_parameter("callback_debug_log", callback_debug_log_);
   this->get_parameter("odom_debug_log", odom_debug_log_);
   this->get_parameter("param_debug_log", param_debug_log_);
@@ -187,13 +189,22 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
     RCLCPP_DEBUG(this->get_logger(), "serial_data_callback()");
   }
 
-  if (serial_debug_log_) {
+  if (serial_raw_debug_log_) {
     std::ostringstream oss;
     oss << std::hex << std::setfill('0');
     for (auto byte : raw_packet) {
       oss << " " << std::setw(2) << static_cast<int>(byte);
     }
-    RCLCPP_DEBUG(this->get_logger(), "[RX] %zu bytes:%s", raw_packet.size(), oss.str().c_str());
+    RCLCPP_DEBUG(this->get_logger(), "[RX raw] %zu bytes:%s", raw_packet.size(), oss.str().c_str());
+  }
+  if (serial_debug_log_) {
+    std::vector<uint8_t> decoded_log = CugoProtocol::decode_cobs(raw_packet);
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
+    for (auto byte : decoded_log) {
+      oss << " " << std::setw(2) << static_cast<int>(byte);
+    }
+    RCLCPP_DEBUG(this->get_logger(), "[RX] %zu bytes:%s", decoded_log.size(), oss.str().c_str());
   }
   rclcpp::Time current_receive_time = this->get_clock()->now();
 
@@ -324,15 +335,26 @@ void Node::control_loop()
         // ハンドシェイク専用パケットの生成 (CuGo -> Protocol)
           std::vector<uint8_t> handshake_packet = cugo_->create_handshake_packet();
           if (!handshake_packet.empty()) {
-            if (serial_debug_log_) {
+            if (serial_raw_debug_log_) {
               std::ostringstream oss;
               oss << std::hex << std::setfill('0');
               for (auto byte : handshake_packet) {
                 oss << " " << std::setw(2) << static_cast<int>(byte);
               }
               RCLCPP_DEBUG(
-                this->get_logger(), "[TX] %zu bytes:%s",
+                this->get_logger(), "[TX raw] %zu bytes:%s",
                 handshake_packet.size(), oss.str().c_str());
+            }
+            if (serial_debug_log_) {
+              std::vector<uint8_t> raw_log = CugoProtocol::decode_cobs(handshake_packet);
+              std::ostringstream oss;
+              oss << std::hex << std::setfill('0');
+              for (auto byte : raw_log) {
+                oss << " " << std::setw(2) << static_cast<int>(byte);
+              }
+              RCLCPP_DEBUG(
+                this->get_logger(), "[TX] %zu bytes:%s",
+                raw_log.size(), oss.str().c_str());
             }
             serial_->write(handshake_packet);
             handshake_last_action_time_ = now;
@@ -399,14 +421,24 @@ void Node::control_loop()
   if (packet.empty()) {
     RCLCPP_ERROR(this->get_logger(), "Failed to serialize command packet.");
   } else {
-    if (serial_debug_log_) {
+    if (serial_raw_debug_log_) {
       std::ostringstream oss;
       oss << std::hex << std::setfill('0');
       for (auto byte : packet) {
         oss << " " << std::setw(2) << static_cast<int>(byte);
       }
       RCLCPP_DEBUG(
-        this->get_logger(), "[TX] %zu bytes:%s", packet.size(), oss.str().c_str());
+        this->get_logger(), "[TX raw] %zu bytes:%s", packet.size(), oss.str().c_str());
+    }
+    if (serial_debug_log_) {
+      std::vector<uint8_t> raw_log = CugoProtocol::decode_cobs(packet);
+      std::ostringstream oss;
+      oss << std::hex << std::setfill('0');
+      for (auto byte : raw_log) {
+        oss << " " << std::setw(2) << static_cast<int>(byte);
+      }
+      RCLCPP_DEBUG(
+        this->get_logger(), "[TX] %zu bytes:%s", raw_log.size(), oss.str().c_str());
     }
     serial_->write(packet);
   }

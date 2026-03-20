@@ -114,7 +114,8 @@ private:
   double handshake_retry_interval_{2.0};
 
   // デバッグ用フラグ
-  bool serial_debug_log_{false};    // シリアル通信パケット内容 ([TX]/[RX])
+  bool serial_debug_log_{false};        // シリアル通信パケット内容 エンコード前/デコード後 ([TX]/[RX])
+  bool serial_raw_debug_log_{false};    // シリアル通信パケット内容 生データ ([TX]/[RX])
   bool callback_debug_log_{false};  // コールバック・制御ループの実行フロー
   bool odom_debug_log_{false};      // オドメトリ・速度データ
   bool param_debug_log_{false};     // 起動時のデバイスIDパラメータ確認

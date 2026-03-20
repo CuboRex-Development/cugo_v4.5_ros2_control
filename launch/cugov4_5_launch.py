@@ -47,7 +47,8 @@ def generate_launch_description():
         'cmd_vel_timeout': 0.5,  # 秒
         'serial_timeout': 0.5,  # 秒
         'product_id': 10000,  # cugov4.5の識別子
-        'serial_debug_log': True,  # シリアル通信内容のデバッグログ出力
+        'serial_debug_log': True,  # シリアル通信内容のデバッグログ出力 (COBSエンコード前/デコード後)
+        'serial_raw_debug_log': False,  # シリアル通信内容のデバッグログ出力 (生データ)
         'callback_debug_log': False,  # コールバック・制御ループの実行フローのデバッグログ出力
         'odom_debug_log': False,  # オドメトリ・速度データのデバッグログ出力
         'param_debug_log': False,  # 起動時のデバイスIDパラメータのデバッグログ出力
