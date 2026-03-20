@@ -227,6 +227,7 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
         connection_state_ = ConnectionState::CONNECTED;
         handshake_state_ = HandshakeState::COMPLETE;
         last_serial_receive_time_ = current_receive_time;
+        last_cmd_vel_time_ = current_receive_time;  // cmd_velタイムアウトをリセット
         is_first_serial_data_ = false;
 
         // ハンドシェイク完了を通知するためにPublishする（位置・速度は変化なし）
@@ -479,6 +480,7 @@ void Node::control_loop()
         handshake_state_ = HandshakeState::INIT;
         is_first_serial_data_ = true;
         last_serial_receive_time_ = now;
+        last_cmd_vel_time_ = now;  // cmd_velタイムアウトをリセット
       }
       last_reconnect_attmpt_time_ = now;
     }
