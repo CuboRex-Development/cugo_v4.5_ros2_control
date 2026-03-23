@@ -145,6 +145,19 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
    ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
    ```
 
+### URDF の確認
+
+ロボットモデルを RViz2 で表示して URDF を確認できます。
+
+```bash
+ros2 launch cugo_v4_5_ros2_control display.launch.py
+```
+
+RViz2 が起動したら、以下の設定を行ってください。
+
+1. Fixed Frame を `base_footprint` に設定
+2. Add → `RobotModel` を追加し、`Description Topic` を `/robot_description` に設定
+
 # Parameters
 
 ノードのパラメータは `config/params.yaml` で管理します。
