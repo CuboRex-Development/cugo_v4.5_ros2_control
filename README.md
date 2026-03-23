@@ -1,3 +1,4 @@
+<!-- TODO:図の修正 -->
 ![image](https://github.com/user-attachments/assets/be603edd-43dd-42b7-8215-2a89df03e3c2)
 
 # cugo_v4.5_ros2_control
@@ -28,6 +29,19 @@ ROS 2 Humble 以降で動作します。
 <!-- TODO:図の修正 -->
 <img width="2527" height="1116" alt="image" src="https://github.com/user-attachments/assets/a8950d77-9907-4d95-99be-b6ca8f536b85" />
 
+## 通信モード
+
+### USB-Serial 接続 (デフォルト)
+
+PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式です。
+追加機器なしに最も簡単に使用できます。
+
+### WiFi 接続
+
+外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。
+ケーブルを使わずに無線でロボットを操作できます。
+接続には事前にロボット側の WiFi 設定が必要です（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）。
+
 #### 対応製品
 
 <!-- TODO: V4.5のリンクを貼る -->
@@ -48,7 +62,7 @@ ROS 2 Humble 以降で動作します。
 
 # Installation
 
-ROS 2 環境がない場合は [ROS 2 Documentation](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) を参照してください。
+ROS 2 環境がない場合は [ROS 2 Documentation](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) を参照し、ROS 2 のインストールを実施してください。
 
 ```bash
 cd ~/your_ros2_ws/src
@@ -68,6 +82,9 @@ source ~/your_ros2_ws/install/local_setup.bash
 ```
 
 # Usage
+
+> [!IMPORTANT]
+> いずれの通信モードでも、事前にマイコン（Raspberry Pi Pico 2 WH）に [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) のスケッチを書き込んでおく必要があります。
 
 ## USB-Serial 接続（デフォルト）
 
@@ -94,8 +111,6 @@ source ~/your_ros2_ws/install/local_setup.bash
 
 launchファイルが内部で socat を自動起動します。
 
-### 方法 A: `params.yaml` に設定する（常時 WiFi 接続する場合）
-
 `config/params.yaml` を編集して `comm_type`、`tcp_host`、`tcp_port` を設定します。
 
 ```yaml
@@ -110,21 +125,6 @@ cugo_v4_5_ros2_control:
 
 ```bash
 ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
-```
-
-### 方法 B: launch 引数で一時的に上書きする
-
-`params.yaml` を変更せず、起動時に引数で接続先を指定します。
-
-```bash
-ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py \
-    comm_type:=wifi tcp_host:=192.168.1.100 tcp_port:=8080
-```
-
-## デバッグログの有効化
-
-```bash
-ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug
 ```
 
 # Parameters
@@ -142,13 +142,13 @@ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug
 
 ### 通信設定
 
-| パラメータ | デフォルト値 | 説明 |
-|-----------|-------------|------|
-| `comm_type` | `serial` | 通信方式: `serial`（USB）または `wifi` |
-| `serial_port` | `/dev/ttyACM0` | シリアルポートのパス（USB接続時） |
-| `serial_baudrate` | `115200` | ボーレート |
-| `tcp_host` | `192.168.1.100` | WiFiモード時の接続先IPアドレス |
-| `tcp_port` | `8080` | WiFiモード時の接続先ポート番号 |
+| パラメータ        | デフォルト値    | 説明                                   |
+| ----------------- | --------------- | -------------------------------------- |
+| `comm_type`       | `serial`        | 通信方式: `serial`（USB）または `wifi` |
+| `serial_port`     | `/dev/ttyACM0`  | シリアルポートのパス（USB接続時）      |
+| `serial_baudrate` | `115200`        | ボーレート                             |
+| `tcp_host`        | `192.168.1.100` | WiFiモード時の接続先IPアドレス         |
+| `tcp_port`        | `8080`          | WiFiモード時の接続先ポート番号         |
 
 > [!NOTE]
 > `comm_type`、`tcp_host`、`tcp_port` は launch 引数でも上書きできます。`params.yaml` の値がデフォルトとして使用されます。
@@ -159,61 +159,76 @@ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug
 
 ### 制御設定
 
-| パラメータ | デフォルト値 | 説明 |
-|-----------|-------------|------|
-| `control_frequency` | `10.0` | 制御周期 [Hz]（最大 100） |
-| `cmd_vel_timeout` | `0.5` | `/cmd_vel` 受信タイムアウト [秒]（超過で速度ゼロ） |
-| `serial_timeout` | `0.5` | マイコン通信タイムアウト [秒] |
+| パラメータ          | デフォルト値 | 説明                                               |
+| ------------------- | ------------ | -------------------------------------------------- |
+| `control_frequency` | `10.0`       | 制御周期 [Hz]（最大 100）                          |
+| `cmd_vel_timeout`   | `0.5`        | `/cmd_vel` 受信タイムアウト [秒]（超過で速度ゼロ） |
+| `serial_timeout`    | `0.5`        | マイコン通信タイムアウト [秒]                      |
 
 ### ROS フレーム・トピック設定
 
-| パラメータ | デフォルト値 | 説明 |
-|-----------|-------------|------|
-| `odom_frame_id` | `odom` | オドメトリフレーム名 |
-| `base_link_frame_id` | `base_footprint` | ベースリンクフレーム名 |
-| `subscribe_topic_name` | `/cmd_vel` | 速度指令トピック名 |
-| `publish_topic_name` | `/odom` | オドメトリトピック名 |
+| パラメータ             | デフォルト値     | 説明                   |
+| ---------------------- | ---------------- | ---------------------- |
+| `odom_frame_id`        | `odom`           | オドメトリフレーム名   |
+| `base_link_frame_id`   | `base_footprint` | ベースリンクフレーム名 |
+| `subscribe_topic_name` | `/cmd_vel`       | 速度指令トピック名     |
+| `publish_topic_name`   | `/odom`          | オドメトリトピック名   |
 
 ### デバイスID
 
-| パラメータ | デフォルト値 | 説明 |
-|-----------|-------------|------|
-| `product_id` | `10000` | CuGo V4.5 製品識別子（変更不要） |
-| `robot_id` | `0` | ロボット識別子（複数台運用時に設定） |
+| パラメータ   | デフォルト値 | 説明                                               |
+| ------------ | ------------ | -------------------------------------------------- |
+| `product_id` | `10000`      | CuGo V4.5 のプロダクトID（変更不要）               |
+| `robot_id`   | `0`          | ロボット識別子（複数台運用時に設定することを想定） |
 
 ### 共分散（SLAM・ナビゲーション調整用）
 
-| パラメータ | デフォルト値 | 説明 |
-|-----------|-------------|------|
-| `pose_cov_x` | `0.04` | 位置 X 精度（0.2 m 相当） |
-| `pose_cov_y` | `0.04` | 位置 Y 精度（0.2 m 相当） |
-| `pose_cov_yaw` | `0.01` | Yaw 精度（0.1 rad 相当） |
-| `twist_cov_linear_x` | `0.0025` | 線速度 X 精度（0.05 m/s 相当） |
-| `twist_cov_linear_y` | `0.0025` | 線速度 Y 精度（0.05 m/s 相当） |
-| その他 Z / Roll / Pitch | `1e9` | 2次元平面のみのため大きな値に設定 |
+| パラメータ            | デフォルト値 | 説明                                          |
+| --------------------- | ------------ | --------------------------------------------- |
+| `pose_cov_x`          | `0.04`       | 位置 X 精度（0.2 m 相当）                     |
+| `pose_cov_y`          | `0.04`       | 位置 Y 精度（0.2 m 相当）                     |
+| `pose_cov_z`          | `1.0e9`      | 位置 Z（2次元平面のみのため大きな値に設定）   |
+| `pose_cov_roll`       | `1.0e9`      | Roll（2次元平面のみのため大きな値に設定）     |
+| `pose_cov_pitch`      | `1.0e9`      | Pitch（2次元平面のみのため大きな値に設定）    |
+| `pose_cov_yaw`        | `0.01`       | Yaw 精度（0.1 rad 相当）                      |
+| `twist_cov_linear_x`  | `0.0025`     | 線速度 X 精度（0.05 m/s 相当）                |
+| `twist_cov_linear_y`  | `0.0025`     | 線速度 Y 精度（0.05 m/s 相当）                |
+| `twist_cov_angular_z` | `1.0e9`      | 角速度 Z（2次元平面のみのため大きな値に設定） |
 
-### デバッグログ[^debug-log]
+### デバッグログ
 
-| パラメータ | デフォルト値 | 説明 |
-|-----------|-------------|------|
-| `serial_debug_log` | `false` | 送受信パケット内容（COBSエンコード前/デコード後） |
-| `serial_raw_debug_log` | `false` | 送受信パケット内容（生データ） |
-| `callback_debug_log` | `false` | コールバック・制御ループの実行フロー |
-| `odom_debug_log` | `false` | オドメトリ・速度データ |
-| `param_debug_log` | `false` | 起動時のデバイスIDパラメータ |
+| パラメータ             | デフォルト値 | 説明                                                    |
+| ---------------------- | ------------ | ------------------------------------------------------- |
+| `serial_debug_log`     | `false`      | 送受信パケット内容（COBSエンコード前/デコード後）のログ |
+| `serial_raw_debug_log` | `false`      | 送受信パケット内容（生データ）のログ                    |
+| `callback_debug_log`   | `false`      | コールバック・制御ループの実行フローのログ              |
+| `odom_debug_log`       | `false`      | オドメトリ・速度データのログ                            |
+| `param_debug_log`      | `false`      | 起動時のデバイスIDパラメータのログ                      |
 
-[^debug-log]: デバッグログを確認するには `log_level:=debug` で起動してください。
+> [!NOTE]
+> デバッグログを確認するには、各パラメータを `true` に設定した上で `log_level:=debug` で起動してください。
+>
+> ```bash
+> ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug
+> ```
 
 # Topics
 
 ## Published Topics
+
 - `/odom` ([nav_msgs/msg/Odometry](https://docs.ros2.org/foxy/api/nav_msgs/msg/Odometry.html))
+  ロボットの位置・姿勢・速度情報（オドメトリ）を配信します。マイコンから受け取った車輪速度をもとに計算されます。
+
 - `/tf` ([tf2_msgs/msg/TFMessage](https://docs.ros2.org/foxy/api/tf2_msgs/msg/TFMessage.html))
+  `odom` フレームから `base_footprint` フレームへの座標変換を配信します。
+
 - `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/foxy/api/std_msgs/msg/Bool.html))
+  マイコンとのハンドシェイク（接続確立）状態を配信します。接続中は `true`、未接続または切断時は `false` になります。
 
 ## Subscribed Topics
 
 - `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/foxy/api/geometry_msgs/msg/Twist.html))
+  ロボットへの速度指令を受信します。`linear.x`（前後）と `angular.z`（旋回）を使用します。
 
 # TF
 
