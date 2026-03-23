@@ -26,8 +26,7 @@ ROS 2 Humble 以降で動作します。
 `/cmd_vel` で受け取った速度指令をロボットのマイコンに送信します。
 マイコン（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)）から受け取った現在速度をもとにオドメトリを計算し、`/odom` として Publish します。
 
-<!-- TODO:図の修正 -->
-<img width="2527" height="1116" alt="image" src="https://github.com/user-attachments/assets/a8950d77-9907-4d95-99be-b6ca8f536b85" />
+<img width="4077" height="2541" alt="cugo_v4 5_ros2_control" src="https://github.com/user-attachments/assets/49c19ceb-2415-420f-85b9-ba4f251c39da" />
 
 ## 通信モード
 
@@ -36,13 +35,17 @@ ROS 2 Humble 以降で動作します。
 PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式です。
 追加機器なしに最も簡単に使用できます。
 
+<img width="4194" height="769" alt="USB" src="https://github.com/user-attachments/assets/66af2424-27d8-4efd-8315-5d9fad49f2af" />
+
 ### WiFi 接続
 
 外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。
 ケーブルを使わずに無線でロボットを操作できます。
 接続には事前にロボット側の WiFi 設定が必要です（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）。
 
-#### 対応製品
+<img width="4194" height="1360" alt="WiFi" src="https://github.com/user-attachments/assets/8f83a93d-7343-4791-ad11-65093e72138a" />
+
+## 対応製品
 
 <!-- TODO: V4.5のリンクを貼る -->
 * [CuGo V4.5](null)
