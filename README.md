@@ -2,44 +2,42 @@
 
 # cugo_v4.5_ros2_control
 
-CuGo V4.5 のROS 2ノードです。
+CuGo V4.5 用 ROS 2 コントロールノードです。
 
-ROS 2 topicの`/cmd_vel`をSubscribeし、`/odom`をPublishします。
-セットでArduinoスケッチの[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)、と使用します。
+`/cmd_vel` を Subscribe してロボットに速度指令を送信し、`/odom` と `/tf` を Publish します。
+マイコン側のスケッチ [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) と組み合わせて使用します。
 
-ROS 2 Humble以降でご利用いただけます。
+ROS 2 Humble 以降で動作します。
 
 # Table of Contents
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Topics and Parameters](#topics-and-parameters)
+- [Parameters](#parameters)
+- [Topics](#topics)
+- [TF](#tf)
 - [Note](#note)
 - [License](#license)
 
 # Features
 
-ROS 2 プログラムとロボットのプログラムとの仲介を行います。
+`/cmd_vel` で受け取った速度指令をロボットのマイコンに送信します。
+マイコン（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)）から受け取った現在速度をもとにオドメトリを計算し、`/odom` として Publish します。
+
+<!-- TODO:図の修正 -->
+<img width="2527" height="1116" alt="image" src="https://github.com/user-attachments/assets/a8950d77-9907-4d95-99be-b6ca8f536b85" />
 
 #### 対応製品
 
 <!-- TODO: V4.5のリンクを貼る -->
 * [CuGo V4.5](null)
 
-#### 内部処理
-
-Subscribeした`/cmd_vel`をロボットのマイコンに送信します。
-
-また、[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)が書き込まれたロボットのマイコンから、CRST01Aの計算したオドメトリを受け取ります。受け取ったオドメトリを`/odom`としてPublishします。
-
-<!-- TODO:図の修正 -->
-<img width="2527" height="1116" alt="image" src="https://github.com/user-attachments/assets/a8950d77-9907-4d95-99be-b6ca8f536b85" />
-
-
 # Requirements
-- OS: Ubuntu 22.04.4 LTS / ROS Distribution: ROS 2 Humble Hawksbill
-- OS: Ubuntu 24.04.4 LTS / ROS Distribution: ROS 2 Jazzy Jalisco
+
+- OS / ROS ディストリビューション
+  - Ubuntu 22.04 LTS / ROS 2 Humble Hawksbill
+  - Ubuntu 24.04 LTS / ROS 2 Jazzy Jalisco
 - xacro
 - robot_state_publisher
 - socat（WiFi接続モードを使用する場合のみ）
@@ -48,261 +46,197 @@ Subscribeした`/cmd_vel`をロボットのマイコンに送信します。
   sudo apt install socat
   ```
 
-
 # Installation
-ROS 2環境がない場合は[ROS 2 Documentation](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)を参照しROS 2をインストールしてください。
 
+ROS 2 環境がない場合は [ROS 2 Documentation](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) を参照してください。
 
-ROS 2のワークスペース内でgit cloneしたのち、colcon buildしてください。
-~~~
-$ cd ~/your_ros2_ws/src
-$ git clone https://github.com/CuboRex-Development/cugo_v4.5_ros2_control.git
-$ cd ../..
-$ colcon build --symlink-install
-$ source ~/your_ros2_ws/install/local_setup.bash
-~~~
+```bash
+cd ~/your_ros2_ws/src
+git clone https://github.com/CuboRex-Development/cugo_v4.5_ros2_control.git
+cd ../..
+colcon build --symlink-install
+source ~/your_ros2_ws/install/local_setup.bash
+```
 
-ビルドエラーが発生する場合、依存パッケージをインストールしてから再度`colcon build`してください。
-~~~
-$ rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_v4.5_ros2_control
-$ cd ~/your_ros2_ws
-$ colcon build --symlink-install
-$ source ~/your_ros2_ws/install/local_setup.bash
-~~~
+ビルドエラーが発生する場合は、依存パッケージをインストールしてから再度 `colcon build` してください。
+
+```bash
+rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_v4.5_ros2_control
+cd ~/your_ros2_ws
+colcon build --symlink-install
+source ~/your_ros2_ws/install/local_setup.bash
+```
 
 # Usage
 
-下記のコマンドでcugo_v4.5_ros2_controlノードが起動します。
-付属のRaspberryPiPicoとUSBケーブルで接続をしたのち、お客様環境にあった権限設定をしてからlaunchファイルを実行してください。
+## USB-Serial 接続（デフォルト）
 
-~~~
-# RaspberryPiPicoの権限付与例
-# お客様環境に合わせてコマンドを実行してください。
-$ sudo chmod 777 /dev/ttyACM0
+1. CuGo V4.5 の Raspberry Pi Pico 2 WH と PC を USB ケーブルで接続します。
 
-# launch ファイルを実行
-$ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
-~~~
+2. シリアルポートへのアクセス権を付与します（環境に合わせて変更してください）。
 
-launchファイルのパラメータを変更することで微調整することもできます。詳細は[Parameters](#parameters)の項目を参照してください。
+   ```bash
+   sudo chmod 777 /dev/ttyACM0
+   ```
 
+3. ノードを起動します。
 
-#### WiFi接続モードでの起動
+   ```bash
+   ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
+   ```
 
-USB接続の代わりにWiFi経由でロボットと通信することができます。
-ロボット側の設定は[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)を参照してください。
+> [!TIP]
+> 正常に通信が開始されない場合は、USB ケーブルを抜き差しして再接続してください。
 
-`comm_type:=wifi` を指定し、接続先のIPアドレスとポート番号を指定して起動します。
+## WiFi 接続（外部ルータ経由）
+
+ロボット側の WiFi 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
+
+launchファイルが内部で socat を自動起動します。
+
+### 方法 A: `params.yaml` に設定する（常時 WiFi 接続する場合）
+
+`config/params.yaml` を編集して `comm_type`、`tcp_host`、`tcp_port` を設定します。
+
+```yaml
+cugo_v4_5_ros2_control:
+  ros__parameters:
+    comm_type: wifi
+    tcp_host: 192.168.1.100   # ← ロボットの IP アドレス
+    tcp_port: 8080
+```
+
+その後、通常通り起動します。
 
 ```bash
-$ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py \
+ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
+```
+
+### 方法 B: launch 引数で一時的に上書きする
+
+`params.yaml` を変更せず、起動時に引数で接続先を指定します。
+
+```bash
+ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py \
     comm_type:=wifi tcp_host:=192.168.1.100 tcp_port:=8080
 ```
 
-WiFiモードでは、launchファイルが内部でsocatを起動し、`/tmp/cugo_vserial` に仮想シリアルポートを生成します。
-ROS 2ノードはこの仮想シリアルポートを通じてロボットと通信するため、C++コードの変更は不要です。
+## デバッグログの有効化
 
+```bash
+ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug
+```
 
-#### ロボット側の操作
-クローラロボット開発プラットフォーム付属のRaspberryPiPicoに[こちらのスケッチ](https://github.com/CuboRex-Development/cugo_ros2_motorcontroller2)を書き込み、ROS 2 PCとRaspberryPiPicoをUSBケーブルで接続してください。
-その後ROSパッケージを実行してください。自動で通信開始します。
+# Parameters
 
-スケッチの書き換えはROS PCである必要性はありません。
+ノードのパラメータは `config/params.yaml` で管理します。
+通常の使用では、このファイルの「通信設定」と「制御設定」のみ確認・変更してください。
 
-もし、うまく `/cmd_vel` 通りに走行を開始しない場合は、一度USBケーブルを抜き、
-ロボットの電源を入れなおしてから再度PCとRaspberryPiPicoをUSBケーブルで接続してください。
+パラメータを変更した場合は `colcon build` を再実行してください。
 
-  
+---
 
-# Topics and Parameters
+`params.yaml` で設定できる主なパラメータは以下の通りです。
+
+## params.yaml パラメータ
+
+### 通信設定
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|-------------|------|
+| `comm_type` | `serial` | 通信方式: `serial`（USB）または `wifi` |
+| `serial_port` | `/dev/ttyACM0` | シリアルポートのパス（USB接続時） |
+| `serial_baudrate` | `115200` | ボーレート |
+| `tcp_host` | `192.168.1.100` | WiFiモード時の接続先IPアドレス |
+| `tcp_port` | `8080` | WiFiモード時の接続先ポート番号 |
+
+> [!NOTE]
+> `comm_type`、`tcp_host`、`tcp_port` は launch 引数でも上書きできます。`params.yaml` の値がデフォルトとして使用されます。
+
+### launch 引数
+
+`log_level`（デフォルト: `info`）: ログレベルを指定します。`debug`, `info`, `warn`, `error`, `fatal` から選択できます。
+
+### 制御設定
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|-------------|------|
+| `control_frequency` | `10.0` | 制御周期 [Hz]（最大 100） |
+| `cmd_vel_timeout` | `0.5` | `/cmd_vel` 受信タイムアウト [秒]（超過で速度ゼロ） |
+| `serial_timeout` | `0.5` | マイコン通信タイムアウト [秒] |
+
+### ROS フレーム・トピック設定
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|-------------|------|
+| `odom_frame_id` | `odom` | オドメトリフレーム名 |
+| `base_link_frame_id` | `base_footprint` | ベースリンクフレーム名 |
+| `subscribe_topic_name` | `/cmd_vel` | 速度指令トピック名 |
+| `publish_topic_name` | `/odom` | オドメトリトピック名 |
+
+### デバイスID
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|-------------|------|
+| `product_id` | `10000` | CuGo V4.5 製品識別子（変更不要） |
+| `robot_id` | `0` | ロボット識別子（複数台運用時に設定） |
+
+### 共分散（SLAM・ナビゲーション調整用）
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|-------------|------|
+| `pose_cov_x` | `0.04` | 位置 X 精度（0.2 m 相当） |
+| `pose_cov_y` | `0.04` | 位置 Y 精度（0.2 m 相当） |
+| `pose_cov_yaw` | `0.01` | Yaw 精度（0.1 rad 相当） |
+| `twist_cov_linear_x` | `0.0025` | 線速度 X 精度（0.05 m/s 相当） |
+| `twist_cov_linear_y` | `0.0025` | 線速度 Y 精度（0.05 m/s 相当） |
+| その他 Z / Roll / Pitch | `1e9` | 2次元平面のみのため大きな値に設定 |
+
+### デバッグログ[^debug-log]
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|-------------|------|
+| `serial_debug_log` | `false` | 送受信パケット内容（COBSエンコード前/デコード後） |
+| `serial_raw_debug_log` | `false` | 送受信パケット内容（生データ） |
+| `callback_debug_log` | `false` | コールバック・制御ループの実行フロー |
+| `odom_debug_log` | `false` | オドメトリ・速度データ |
+| `param_debug_log` | `false` | 起動時のデバイスIDパラメータ |
+
+[^debug-log]: デバッグログを確認するには `log_level:=debug` で起動してください。
+
+# Topics
+
 ## Published Topics
 - `/odom` ([nav_msgs/msg/Odometry](https://docs.ros2.org/foxy/api/nav_msgs/msg/Odometry.html))
 - `/tf` ([tf2_msgs/msg/TFMessage](https://docs.ros2.org/foxy/api/tf2_msgs/msg/TFMessage.html))
 - `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/foxy/api/std_msgs/msg/Bool.html))
 
-## Subscription Topic
+## Subscribed Topics
+
 - `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/foxy/api/geometry_msgs/msg/Twist.html))
 
-## Parameters
-
-- `comm_type (string, default: serial)`
-  - 通信方式の選択。`serial`（USB経由のシリアル通信）または `wifi`（WiFi経由のTCP通信）を指定します
-  - `wifi` を指定した場合、launchファイルが内部でsocatを起動し `/tmp/cugo_vserial` に仮想シリアルポートを生成します
-- `tcp_host (string, default: 192.168.1.100)`
-  - `comm_type:=wifi` のときのみ使用。接続先のIPアドレス
-- `tcp_port (string, default: 8080)`
-  - `comm_type:=wifi` のときのみ使用。接続先のポート番号
-- `odom_frame_id (string, default: odom)`
-  - オドメトリフレーム名の指定
-- `base_link_frame_id (string, default: base_link)`
-  - ベースリンクフレーム名の指定
-  - `cugov4_5_launch.py` では、`base_footprint`としています。
-- `subscribe_topic_name (string, default: /cmd_vel)`
-  - Twist指示のトピック名の指定
-- `publish_topic_name (string, default: /odom)`
-  - Odometry出力のトピック名の指定
-- `control_frequency (float, default: 10.0)`
-  - マイコンへの指示、OdomのPublishの更新周期（最大100Hz）
-- `serial_port (string, default: /dev/ttyACM0)`
-  - RaspberryPi Picoのシリアル通信のポート名の指定
-- `serial_baudrate (int, default: 115200)`
-  - シリアル通信のボーレート
-- `cmd_vel_timeout (float, default: 0.5)`
-  - /cmd_velの通信途絶判定を決めるタイムアウト時間[秒]
-  - タイムアウトしたら速度0を上書きして強制的に停止
-- `serial_timeout (float, default: 0.5)`
-  - マイコンの通信途絶判定を決めるタイムアウト時間[秒]
-  - タイムアウトしたらodom.twistの値を0にして仮想ロボット速度をリセット
-- `pose_cov_x (float, default: 0.04)`
-  - Odometryの`pose.x`の共分散
-  - 0.2[m]程度の精度を見込んでいる(0.2^2)
-- `pose_cov_y (float, default: 0.04)`
-  - Odometryの`pose.y`の共分散
-  - 0.2[m]程度の精度を見込んでいる(0.2^2)
-- `pose_cov_z (float, default: 1e9)`
-  - Odometryの`pose.z`の共分散
-  - 2次元平面のみの定義であるため、大きな値に設定している
-- `pose_cov_roll (float, default: 1e9)`
-  - Odometryの`orientation.q`のroll成分の共分散
-  - 2次元平面のみの定義であるため、大きな値に設定している
-- `pose_cov_pitch (float, default: 1e9)`
-  - Odometryの`orientation.q`のpitch成分の共分散
-  - 2次元平面のみの定義であるため、大きな値に設定している
-- `pose_cov_yaw (float, default: 0.01)`
-  - Odometryの`orientation.q`のyaw成分の共分散
-  - 0.1[rad]程度の精度を見込んでいる(0.1^2)
-- `twist_cov_linear_x (float, default: 0.0025)`
-  - Twistの`linear.x`の共分散
-  - 0.05[m/s]程度の精度を見込んでいる(0.05^2)
-- `twist_cov_linear_y (float, default: 0.0025)`
-  - Twistの`linear.y`の共分散
-  - 0.05[m/s]程度の精度を見込んでいる(0.05^2)
-- `twist_cov_angular_z (float, default: 1e9)`
-  - Twistの`angular.z`の共分散
-  - 2次元平面のみの定義であるため、大きな値に設定している
-- `product_id (uint16_t, default: 10000)`
-  - [プロダクトID](#プロダクトid) を参照
-- `robot_id (uint16_t, default: 0)`
-  - [ロボットID](#ロボットid) を参照
-- `serial_debug_log (bool, default: false)`
-  - `true` にすると、RaspberryPi Picoとの送受信パケットをDEBUGレベルでログ出力します[^debug-log]
-  - 送信パケットは COBSエンコード前、受信パケットは COBSデコード後のデータを出力します
-  - 送信パケットは `[TX]`、受信パケットは `[RX]` のプレフィックスで区別されます
-- `serial_raw_debug_log (bool, default: false)`
-  - `true` にすると、RaspberryPi Picoとシリアル通信で直接やり取りしている生データ（COBSエンコード済み）をDEBUGレベルでログ出力します[^debug-log]
-  - 送信パケットは `[TX raw]`、受信パケットは `[RX raw]` のプレフィックスで区別されます
-- `callback_debug_log (bool, default: false)`
-  - `true` にすると、コールバック・制御ループの実行フローをDEBUGレベルでログ出力します[^debug-log]
-  - `serial_data_callback()` の開始・Publish完了、`control_loop()` の開始・通信切断時のゼロ速度Publish時に出力されます
-- `odom_debug_log (bool, default: false)`
-  - `true` にすると、オドメトリ・速度データをDEBUGレベルでログ出力します[^debug-log]
-  - 現在のX・Y座標・Yaw角、および線速度・角速度を出力します
-- `param_debug_log (bool, default: false)`
-  - `true` にすると、起動時のデバイスIDパラメータ（`product_id`・`robot_id`）をDEBUGレベルでログ出力します[^debug-log]
-
-[^debug-log]: 出力を確認するにはログレベルをdebugに設定する必要があります。
-
-    ~~~bash
-    ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug
-    ~~~
-
-上記のパラメータはlaunchファイルで設定されています。
-
 # TF
-CuGoを活用したロボットでTFを構築するためにxacroを利用します。
 
-ご自身のロボットに取り付けられている部品を説明するxacroを`/urdf/parts`ディレクトリに格納してください。
-デフォルトでは、
-- CuGoそのものの位置関係を表現したurdfの`cugo_base.urdf.xacro`
-- 部品を追加したサンプルとしてのurdfの`mid360.urdf.xacro` (MID-360は製品には付属していません。コメントアウトで無効化されています)
-が格納されています。
-~~~
+CuGo を活用したロボットで TF を構築するために xacro を利用します。
+ご自身のロボットに取り付けた部品を記述した xacro を `urdf/parts` に格納してください。
+
+```
 cugo_v4.5_ros2_control
 └── urdf
-    ├── my_cugo_robot.urdf.xacro
+    ├── my_cugo_robot.urdf.xacro   ← 部品 xacro を読み込むトップレベルファイル
     └── parts
-        ├── cugov4_5_base.urdf.xacro
-        └── mid360.urdf.xacro
-~~~
+        ├── cugov4_5_base.urdf.xacro   ← CuGo 本体の位置関係
+        └── mid360.urdf.xacro          ← センサ搭載サンプル（デフォルトで無効）
+```
 
-`parts`内にある部品xacroを`my_cugo_robot.urdf.xacro`が読み込むことでロボット全体のTFを構築することができます。
-`my_cugo_robot.urdf.xacro` は `robot_state_publisher` によって、ロボット構成のTFを配信します。
-部品を追加する場合、`my_cugo_robot.urdf.xacro`にご自身で追加したxacro名を追記してください。
-
-追記した後は`colcon build`を行ってください。追加したファイルが反映されます。
-
-# Protocol
-[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)と、送信・受信ともにヘッダ8バイト・ボディ64バイトの合計72バイトから構成されるデータを通信しています。
-ボディデータに格納されるデータの一覧は以下の通りになります。
-ボディの残りの領域は今後拡張できるように確保されているだけで、現在は00を送受信しています。
-
-正しいデバイスと通信できているかを確認するため、初回のデータ通信でPCとロボットが想定するデバイスかを確認します。
-確認が取れるまで、ロボットは走行を開始しません。
-
-### Arduinoドライバへの送信データ
-
-#### ヘッダ
-Data Name      | Data Type  | Data Size(byte) | Start Address in PacketHeader | Data Description
----------------|------------|-----------------|-------------------------------|--------------------
-product_id     | uint16_t   | 2               | 0                             | 接続先として期待する[プロダクトID](#プロダクトid)
-robot_id       | uint16_t   | 2               | 2                             | 接続先として期待する[ロボットID](#ロボットid)
-length         | uint16_t   | 2               | 4                             | ヘッダを含む通信データの長さ、72固定
-checksum       | uint16_t   | 2               | 6                             | ボディデータのチェックサム
-
-
-
-#### ボディ
-
-Data Name            | Data Type  | Data Size(byte) | Start Address in PacketBody | Data Description
----------------------|------------|-----------------|-----------------------------|--------------------
-target_x_speed       | int16_t    | 2               | 0                           | x方向目標速度(x0.001 m/s)
-target_y_speed       | int16_t    | 2               | 2                           | y方向目標速度(x0.001 m/s)、0固定
-target_theta_speed   | int16_t    | 2               | 4                           | z軸回りの回転方向目標速度(x0.001 rad/s)
-Nan                  | Nan        | 54              | 6                           | 使用しない、0
-product_id           | uint16_t   | 2               | 60                          | 接続先として期待する[プロダクトID](#プロダクトid)
-robot_id             | uint16_t   | 2               | 62                          | 接続先として期待する[ロボットID](#ロボットid)
-
-
-### Arduinoドライバからの受信データ
-
-#### ヘッダ
-Data Name      | Data Type  | Data Size(byte) | Start Address in PacketHeader | Data Description
----------------|------------|-----------------|-------------------------------|--------------------
-product_id     | uint16_t   | 2               | 0                             | 自身の[プロダクトID](#プロダクトid)
-robot_id       | uint16_t   | 2               | 2                             | 自身の[ロボットID](#ロボットid)
-length         | uint16_t   | 2               | 4                             | ヘッダを含む通信データの長さ、72固定
-checksum       | uint16_t   | 2               | 6                             | ボディデータのチェックサム
-
-#### ボディ
-
-Data Name             | Data Type  | Data Size(byte) | Start Address in PacketBody | Data Description
-----------------------|------------|-----------------|-----------------------------|-----------------
-current_x_speed       | int16_t    | 2               | 0                           | x方向現在速度(x0.001 m/s)
-current_y_speed       | int16_t    | 2               | 2                           | y方向現在速度(x0.001 m/s)、0固定
-current_theta_speed   | int16_t    | 2               | 4                           | z軸回りの回転方向現在速度(x0.001 rad/s)
-Nan                   | Nan        | 54              | 6                           | 使用しない、0
-product_id            | uint16_t   | 2               | 60                          | 自身の[プロダクトID](#プロダクトid)
-robot_id              | uint16_t   | 2               | 62                          | 自身の[ロボットID](#ロボットid)
-
-### プロダクトID
-CuboRexから販売する製品ごとに、プロダクトIDを設定しています。
-通信プロトコルに互換性があるデバイスは、プロダクトIDの10000 の位を同じ値としています。
-プロダクトIDの10000 の位が異なるデバイスを接続した際には、通信に失敗します。
-
-
-| 製品    | プロダクトID |
-| ------- | -----------: |
-| CuGo V4 |       10000 |
-
-### ロボットID
-ロボットを複数台使用する際に、ロボットの識別のために使用する値です。
-現在のバージョンではロボットIDに応じたプログラムは実装していないため、ロボットIDを変えても処理は変わりません。
-
+部品を追加する場合は `my_cugo_robot.urdf.xacro` に追記し、`colcon build` を再実行してください。
 
 # Note
 
-ご不明点がございましたら、[お問い合わせフォーム](https://cuborex.com/contact/)にてお問い合わせください。回答いたします。
+通信プロトコルの詳細仕様は [PROTOCOL.md](PROTOCOL.md) を参照してください。
 
+ご不明点は [お問い合わせフォーム](https://cuborex.com/contact/) よりお問い合わせください。
 
 # License
-このプロジェクトはApache License 2.0のもと、公開されています。詳細はLICENSEをご覧ください。
+
+このプロジェクトは Apache License 2.0 のもとで公開されています。詳細は LICENSE をご覧ください。
