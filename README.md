@@ -127,7 +127,7 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 3. ノードを起動します。
 
    ```bash
-   ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
+   ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
    ```
 
 
@@ -149,7 +149,7 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 2. ノードを起動します。
 
    ```bash
-   ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
+   ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
    ```
 
 # Parameters
@@ -231,7 +231,7 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 > デバッグログを確認するには、各パラメータを `true` に設定した上で `log_level:=debug` で起動してください。
 >
 > ```bash
-> ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py log_level:=debug
+> ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py log_level:=debug
 > ```
 
 # Topics
@@ -262,7 +262,7 @@ cugo_v4.5_ros2_control
 └── urdf
     ├── my_cugo_robot.urdf.xacro   ← 部品 xacro を読み込むトップレベルファイル
     └── parts
-        ├── cugov4_5_base.urdf.xacro   ← CuGo 本体の位置関係
+        ├── cugo_v4_5_base.urdf.xacro   ← CuGo 本体の位置関係
         └── mid360.urdf.xacro          ← センサ搭載サンプル（デフォルトで無効）
 ```
 
