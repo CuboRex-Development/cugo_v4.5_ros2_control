@@ -3,7 +3,7 @@
 <package format="3">
   <name>cugo_v4_5_ros2_control</name>
   <version>0.0.0</version>
-  <description>This package drives CuGo with ROS control signals.</description>
+  <description>This package drives CuGo v4.5 with ROS control signals.</description>
   <maintainer email="yoshida-yuuki@cuborex.com">yuki</maintainer>
   <license>Apache-2.0</license>
 
