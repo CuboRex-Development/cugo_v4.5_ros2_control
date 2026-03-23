@@ -67,6 +67,7 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 ### 依存パッケージ
   - xacro
   - robot_state_publisher
+  - joint_state_publisher_gui（URDF確認・デバッグ用）
   - socat（WiFi接続モードを使用する場合のみ）
 
 # Installation
@@ -78,28 +79,20 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
    本ノードを実行するPCに ROS 2 環境が導入されていない場合は、 [ROS 2 Documentation](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) を参照し、ROS 2 のインストールを実施してください。
 
 
-2. aptで依存パッケージをインストールします。
-
-   以下のコマンドで依存パッケージをインストールしてください。
-
-   ```bash
-   sudo apt install ros-$ROS_DISTRO-xacro ros-$ROS_DISTRO-robot-state-publisher socat
-   ```
-
-3. cugo_v4.5_ros2_control ノードをクローンします。
+2. cugo_v4.5_ros2_control ノードをクローンします。
 
    ```bash
    cd ~/your_ros2_ws/src
    git clone https://github.com/CuboRex-Development/cugo_v4.5_ros2_control.git
    ```
 
-4. rosdepで依存パッケージをインストールします。
+3. rosdepで依存パッケージをインストールします。
 
    ```bash
    rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_v4.5_ros2_control
    ```
 
-5. cugo_v4.5_ros2_control ノードをビルドします。
+4. cugo_v4.5_ros2_control ノードをビルドします。
 
    ```bash
    cd ~/your_ros2_ws
