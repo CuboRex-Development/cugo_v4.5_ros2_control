@@ -10,8 +10,19 @@ CuGo V4.5 用 ROS 2 コントロールノードです。
 
 ROS 2 Humble 以降で動作します。
 
+### 対応製品
+
+<!-- TODO: V4.5のリンクを貼る -->
+* [CuGo V4.5](null)
+
+> [!WARNING]
+> クローラロボット開発プラットフォーム CuGo V4 / クローラロボット開発プラットフォーム V3i をご利用の方は [cugo_ros2_control2](https://github.com/CuboRex-Development/cugo_ros2_control2) を参照してください。
+
+
+
 # Table of Contents
 - [Features](#features)
+- [Connection](#connection)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -23,12 +34,14 @@ ROS 2 Humble 以降で動作します。
 
 # Features
 
-`/cmd_vel` で受け取った速度指令をロボットのマイコンに送信します。
-マイコン（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller)）から受け取った現在速度をもとにオドメトリを計算し、`/odom` として Publish します。
+`/cmd_vel` で受け取った速度指令を [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) に送信し、マイコンから受け取った現在速度をもとにオドメトリを計算して `/odom` として Publish します。
 
 <img width="4077" height="2541" alt="cugo_v4 5_ros2_control" src="https://github.com/user-attachments/assets/49c19ceb-2415-420f-85b9-ba4f251c39da" />
 
-## 通信モード
+
+本ノードを実行しているROS2 PC とCuGo V4.5 との通信方式は USB-Serial をデフォルトとしていますが、その他の通信方式も選択することができます。
+
+# Connection
 
 ### USB-Serial 接続 (デフォルト)
 
@@ -45,55 +58,67 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 
 <img width="4194" height="1360" alt="WiFi" src="https://github.com/user-attachments/assets/8f83a93d-7343-4791-ad11-65093e72138a" />
 
-## 対応製品
-
-<!-- TODO: V4.5のリンクを貼る -->
-* [CuGo V4.5](null)
-
 # Requirements
 
-- OS / ROS ディストリビューション
+### OS / ROS ディストリビューション
   - Ubuntu 22.04 LTS / ROS 2 Humble Hawksbill
   - Ubuntu 24.04 LTS / ROS 2 Jazzy Jalisco
-- xacro
-- robot_state_publisher
-- socat（WiFi接続モードを使用する場合のみ）
 
-  ```bash
-  sudo apt install socat
-  ```
+### 依存パッケージ
+  - xacro
+  - robot_state_publisher
+  - socat（WiFi接続モードを使用する場合のみ）
 
 # Installation
 
-ROS 2 環境がない場合は [ROS 2 Documentation](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) を参照し、ROS 2 のインストールを実施してください。
+以下のコマンド中の `your_ros2_ws` は、ご自身のワークスペース名に置き換えてください。
 
-```bash
-cd ~/your_ros2_ws/src
-git clone https://github.com/CuboRex-Development/cugo_v4.5_ros2_control.git
-cd ../..
-colcon build --symlink-install
-source ~/your_ros2_ws/install/local_setup.bash
-```
+1. ROS 2 環境を用意します。
 
-ビルドエラーが発生する場合は、依存パッケージをインストールしてから再度 `colcon build` してください。
+   本ノードを実行するPCに ROS 2 環境が導入されていない場合は、 [ROS 2 Documentation](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html) を参照し、ROS 2 のインストールを実施してください。
 
-```bash
-rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_v4.5_ros2_control
-cd ~/your_ros2_ws
-colcon build --symlink-install
-source ~/your_ros2_ws/install/local_setup.bash
-```
+
+2. aptで依存パッケージをインストールします。
+
+   以下のコマンドで依存パッケージをインストールしてください。
+
+   ```bash
+   sudo apt install ros-$ROS_DISTRO-xacro ros-$ROS_DISTRO-robot-state-publisher socat
+   ```
+
+3. cugo_v4.5_ros2_control ノードをクローンします。
+
+   ```bash
+   cd ~/your_ros2_ws/src
+   git clone https://github.com/CuboRex-Development/cugo_v4.5_ros2_control.git
+   ```
+
+4. rosdepで依存パッケージをインストールします。
+
+   ```bash
+   rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_v4.5_ros2_control
+   ```
+
+5. cugo_v4.5_ros2_control ノードをビルドします。
+
+   ```bash
+   cd ~/your_ros2_ws
+   colcon build --symlink-install
+   source ~/your_ros2_ws/install/local_setup.bash
+   ```
+
+
 
 # Usage
 
 > [!IMPORTANT]
-> いずれの通信モードでも、事前にマイコン（Raspberry Pi Pico 2 WH）に [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) のスケッチを書き込んでおく必要があります。
+> いずれの通信モードでも、事前にマイコン（Raspberry Pi Pico 2 WH）に [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) のスケッチを書き込んでおく必要があります。事前に、cugo_v4.5_ros2_motorcontrollerのInstallationの手順を実施してください。
 
-## USB-Serial 接続（デフォルト）
+### USB-Serial 接続（デフォルト）
 
 1. CuGo V4.5 の Raspberry Pi Pico 2 WH と PC を USB ケーブルで接続します。
 
-2. シリアルポートへのアクセス権を付与します（環境に合わせて変更してください）。
+2. シリアルポートへのアクセス権を付与します（環境に合わせてポート名やアクセス権限を変更してください）。
 
    ```bash
    sudo chmod 777 /dev/ttyACM0
@@ -105,30 +130,27 @@ source ~/your_ros2_ws/install/local_setup.bash
    ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
    ```
 
-> [!TIP]
-> 正常に通信が開始されない場合は、USB ケーブルを抜き差しして再接続してください。
 
-## WiFi 接続（外部ルータ経由）
+
+### WiFi 接続（外部ルータ経由）
 
 ロボット側の WiFi 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
 
-launchファイルが内部で socat を自動起動します。
+1. `config/params.yaml` を編集して `comm_type`、`tcp_host`、`tcp_port` を設定します。
 
-`config/params.yaml` を編集して `comm_type`、`tcp_host`、`tcp_port` を設定します。
+   ```yaml
+   cugo_v4_5_ros2_control:
+     ros__parameters:
+       comm_type: wifi
+       tcp_host: 192.168.1.100   # ← ロボットの IP アドレス
+       tcp_port: 8080
+   ```
 
-```yaml
-cugo_v4_5_ros2_control:
-  ros__parameters:
-    comm_type: wifi
-    tcp_host: 192.168.1.100   # ← ロボットの IP アドレス
-    tcp_port: 8080
-```
+2. ノードを起動します。
 
-その後、通常通り起動します。
-
-```bash
-ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
-```
+   ```bash
+   ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
+   ```
 
 # Parameters
 
@@ -137,11 +159,8 @@ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
 
 パラメータを変更した場合は `colcon build` を再実行してください。
 
----
-
 `params.yaml` で設定できる主なパラメータは以下の通りです。
 
-## params.yaml パラメータ
 
 ### 通信設定
 
@@ -162,11 +181,11 @@ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
 
 ### 制御設定
 
-| パラメータ          | デフォルト値 | 説明                                               |
-| ------------------- | ------------ | -------------------------------------------------- |
-| `control_frequency` | `10.0`       | 制御周期 [Hz]（最大 100）                          |
-| `cmd_vel_timeout`   | `0.5`        | `/cmd_vel` 受信タイムアウト [秒]（超過で速度ゼロ） |
-| `serial_timeout`    | `0.5`        | マイコン通信タイムアウト [秒]                      |
+| パラメータ          | デフォルト値 | 説明                                                |
+| ------------------- | ------------ | --------------------------------------------------- |
+| `control_frequency` | `10.0`       | 制御周期 [Hz]（最大 100）                           |
+| `cmd_vel_timeout`   | `0.5`        | `/cmd_vel` 受信タイムアウト [秒]（超過で速度ゼロ）  |
+| `serial_timeout`    | `0.5`        | マイコンからの受信タイムアウト [秒]（超過で再接続） |
 
 ### ROS フレーム・トピック設定
 
@@ -217,7 +236,7 @@ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
 
 # Topics
 
-## Published Topics
+### Published Topics
 
 - `/odom` ([nav_msgs/msg/Odometry](https://docs.ros2.org/foxy/api/nav_msgs/msg/Odometry.html))
   ロボットの位置・姿勢・速度情報（オドメトリ）を配信します。マイコンから受け取った車輪速度をもとに計算されます。
@@ -228,7 +247,7 @@ ros2 launch cugo_v4_5_ros2_control cugov4_5_launch.py
 - `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/foxy/api/std_msgs/msg/Bool.html))
   マイコンとのハンドシェイク（接続確立）状態を配信します。接続中は `true`、未接続または切断時は `false` になります。
 
-## Subscribed Topics
+### Subscribed Topics
 
 - `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/foxy/api/geometry_msgs/msg/Twist.html))
   ロボットへの速度指令を受信します。`linear.x`（前後）と `angular.z`（旋回）を使用します。
