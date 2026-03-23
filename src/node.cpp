@@ -40,6 +40,9 @@ Node::Node()
   this->declare_parameter("subscribe_topic_name", "/cmd_vel");
   this->declare_parameter("publish_topic_name", "/odom");
   this->declare_parameter("control_frequency", 10.0);
+  this->declare_parameter("comm_type", "serial");
+  this->declare_parameter("tcp_host", "192.168.1.100");
+  this->declare_parameter("tcp_port", 8080);
   this->declare_parameter("serial_port", "/dev/ttyACM0");
   this->declare_parameter("serial_baudrate", 115200);
   this->declare_parameter("cmd_vel_timeout", 0.5); // 秒
