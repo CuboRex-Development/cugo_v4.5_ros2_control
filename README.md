@@ -50,25 +50,32 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 
 <img width="4194" height="769" alt="USB" src="https://github.com/user-attachments/assets/66af2424-27d8-4efd-8315-5d9fad49f2af" />
 
-### WiFi 接続
+### WiFi APモード
 
-外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。
-ケーブルを使わずに無線でロボットを操作できます。
+Raspberry Pi Pico 2 WH 自身がアクセスポイントとして動作する方式です。
+WiFi ルータを用意せずに無線でロボットを操作できます。
 接続には事前にロボット側の WiFi 設定が必要です（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）。
 
-<img width="4194" height="1360" alt="WiFi" src="https://github.com/user-attachments/assets/8f83a93d-7343-4791-ad11-65093e72138a" />
+<!-- TODO: APモード接続図を追加 -->
+
+### WiFi Stationモード（外部ルータ経由）
+
+外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。
+通信を行うために、WiFiルータが必要です。WiFiルータはご自身でご用意ください。
+接続には事前にロボット側の WiFi 設定が必要です（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）。
+
+<img width="4194" height="1360" alt="WiFi Station" src="https://github.com/user-attachments/assets/8f83a93d-7343-4791-ad11-65093e72138a" />
 
 # Requirements
 
 ### OS / ROS ディストリビューション
-  - Ubuntu 22.04 LTS / ROS 2 Humble Hawksbill
   - Ubuntu 24.04 LTS / ROS 2 Jazzy Jalisco
 
 ### 依存パッケージ
   - xacro
   - robot_state_publisher
   - joint_state_publisher_gui（URDF確認・デバッグ用）
-  - socat（WiFi接続モードを使用する場合のみ）
+  - socat（WiFiモード〔APモード・Stationモード〕を使用する場合のみ）
 
 # Installation
 
@@ -125,9 +132,31 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 
 
 
-### WiFi 接続（外部ルータ経由）
+### WiFi APモード（ルータ不要）
 
-ロボット側の WiFi 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
+ロボット側の WiFi AP 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
+
+1. PC の WiFi を、ロボット側で設定したアクセスポイント（デフォルト SSID: `CuGo_AP`）に接続します。
+
+2. `config/params.yaml` を編集して `comm_type`、`tcp_host`、`tcp_port` を設定します。
+
+   ```yaml
+   cugo_v4_5_ros2_control:
+     ros__parameters:
+       comm_type: wifi
+       tcp_host: 192.168.42.1   # ← APモード時の固定 IP アドレス、デフォルト値
+       tcp_port: 8080
+   ```
+
+3. ノードを起動します。
+
+   ```bash
+   ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
+   ```
+
+### WiFi Stationモード（外部ルータ経由）
+
+ロボット側の WiFi Station 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
 
 1. `config/params.yaml` を編集して `comm_type`、`tcp_host`、`tcp_port` を設定します。
 
@@ -135,7 +164,7 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
    cugo_v4_5_ros2_control:
      ros__parameters:
        comm_type: wifi
-       tcp_host: 192.168.1.100   # ← ロボットの IP アドレス
+       tcp_host: 192.168.1.100   # ← ルータが割り当てたロボットの IP アドレス
        tcp_port: 8080
    ```
 
@@ -170,13 +199,13 @@ RViz2 が起動したら、以下の設定を行ってください。
 
 ### 通信設定
 
-| パラメータ        | デフォルト値    | 説明                                   |
-| ----------------- | --------------- | -------------------------------------- |
-| `comm_type`       | `serial`        | 通信方式: `serial`（USB）または `wifi` |
-| `serial_port`     | `/dev/ttyACM0`  | シリアルポートのパス（USB接続時）      |
-| `serial_baudrate` | `115200`        | ボーレート                             |
-| `tcp_host`        | `192.168.1.100` | WiFiモード時の接続先IPアドレス         |
-| `tcp_port`        | `8080`          | WiFiモード時の接続先ポート番号         |
+| パラメータ        | デフォルト値    | 説明                                                                   |
+| ----------------- | --------------- | ---------------------------------------------------------------------- |
+| `comm_type`       | `serial`        | 通信方式: `serial`（USB）または `wifi`（APモード・Stationモード共通）  |
+| `serial_port`     | `/dev/ttyACM0`  | シリアルポートのパス（USB接続時）                                      |
+| `serial_baudrate` | `115200`        | ボーレート                                                             |
+| `tcp_host`        | `192.168.1.100` | WiFiモード時の接続先IPアドレス（APモードは `192.168.42.1` を指定）     |
+| `tcp_port`        | `8080`          | WiFiモード時の接続先ポート番号                                         |
 
 > [!NOTE]
 > `comm_type`、`tcp_host`、`tcp_port` は launch 引数でも上書きできます。`params.yaml` の値がデフォルトとして使用されます。

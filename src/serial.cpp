@@ -113,6 +113,7 @@ bool Serial::reconnect(const std::string & port, int baudrate)
 {
   std::cout << "[Serial INFO] Reconnecting..." << std::endl;
   close();
+  packet_buffer_.clear();  // 再接続前に残留データをクリア
 
   // io_contextを再利用可能な状態に戻す
   if (io_context_.stopped()) {
