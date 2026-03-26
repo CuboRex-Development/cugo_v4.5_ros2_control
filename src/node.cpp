@@ -48,6 +48,7 @@ Node::Node()
   this->declare_parameter("cmd_vel_timeout", 0.5); // 秒
   this->declare_parameter("serial_timeout", 0.5);  // 秒
   this->declare_parameter("max_consecutive_errors", 5);
+  this->declare_parameter("response_lost_timeout", 0.0);
   this->declare_parameter("product_id", 10000);
   this->declare_parameter("robot_id", 0);
   // ログ設定パラメータ (INFOレベル)
@@ -92,6 +93,14 @@ Node::Node()
   int max_consecutive_errors_int;
   this->get_parameter("max_consecutive_errors", max_consecutive_errors_int);
   max_consecutive_errors_ = static_cast<uint32_t>(std::max(1, max_consecutive_errors_int));
+  this->get_parameter("response_lost_timeout", response_lost_timeout_);
+  if (response_lost_timeout_ > 0.0 && response_lost_timeout_ >= serial_timeout_) {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "response_lost_timeout (%.2f) >= serial_timeout (%.2f). response_lost_timeout disabled.",
+      response_lost_timeout_, serial_timeout_);
+    response_lost_timeout_ = 0.0;
+  }
   this->get_parameter("product_id", pid);
   this->get_parameter("robot_id", rid);
   this->get_parameter("param_info_log", param_info_log_);
@@ -132,6 +141,7 @@ Node::Node()
     RCLCPP_INFO(this->get_logger(), "  cmd_vel_timeout         : %f", cmd_vel_timeout_);
     RCLCPP_INFO(this->get_logger(), "  serial_timeout          : %f", serial_timeout_);
     RCLCPP_INFO(this->get_logger(), "  max_consecutive_errors  : %u", max_consecutive_errors_);
+    RCLCPP_INFO(this->get_logger(), "  response_lost_timeout   : %f", response_lost_timeout_);
     RCLCPP_INFO(this->get_logger(), "  product_id              : %d", pid);
     RCLCPP_INFO(this->get_logger(), "  robot_id                : %d", rid);
   }
@@ -325,6 +335,9 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
 
+    // 応答受信フラグをリセット (response_lost_timeout 機能用)
+    waiting_for_response_ = false;
+
     // 最初のデータ受信時は、前回値として保存するだけ
     if (is_first_serial_data_) {
       last_serial_receive_time_ = current_receive_time;
@@ -418,6 +431,7 @@ void Node::control_loop()
         last_serial_receive_time_ = now;
         last_cmd_vel_time_ = now;  // cmd_velタイムアウトをリセット
         latest_cmd_vel_ = geometry_msgs::msg::Twist();  // 再接続後は速度ゼロから開始
+        waiting_for_response_ = false;  // response_lost_timeout 機能をリセット
       }
       last_reconnect_attmpt_time_ = now;
     }
@@ -549,12 +563,15 @@ void Node::control_loop()
   rclcpp::Time local_last_cmd_vel_time;
   rclcpp::Time local_last_serial_receive_time;
 
+  bool local_waiting_for_response = false;
+
   // cmd_velにアクセスしてすぐにロック解除
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
     local_cmd_vel = latest_cmd_vel_;
     local_last_cmd_vel_time = last_cmd_vel_time_;
     local_last_serial_receive_time = last_serial_receive_time_;
+    local_waiting_for_response = waiting_for_response_;
   }
 
   double vx = local_cmd_vel.linear.x;
@@ -580,10 +597,27 @@ void Node::control_loop()
     packet = cugo_->create_command_packet(vx, vy, wz);
   }
 
+  // --- response_lost_timeout チェック ---
+  bool skip_tx = false;
+  if (response_lost_timeout_ > 0.0 && local_waiting_for_response) {
+    double elapsed = (now - last_tx_time_).seconds();
+    if (elapsed < response_lost_timeout_) {
+      skip_tx = true;  // 応答待ち中のためTXをスキップ
+    } else {
+      // タイムアウト → response lost: フラグリセットして次のTXを許可
+      RCLCPP_WARN(
+        this->get_logger(),
+        "[response lost] No response received within %.2f s. Sending next request.",
+        response_lost_timeout_);
+      std::lock_guard<std::mutex> lock(data_mutex_);
+      waiting_for_response_ = false;
+    }
+  }
+
     // 3. 送信
   if (packet.empty()) {
     RCLCPP_ERROR(this->get_logger(), "Failed to serialize command packet.");
-  } else {
+  } else if (!skip_tx) {
     if (serial_raw_log_) {
       std::ostringstream oss;
       oss << std::hex << std::setfill('0');
@@ -604,6 +638,14 @@ void Node::control_loop()
         this->get_logger(), "[TX] %zu bytes:%s", raw_log.size(), oss.str().c_str());
     }
     serial_->write(packet);
+    // 応答待ち状態に移行 (response_lost_timeout が有効な場合のみ)
+    if (response_lost_timeout_ > 0.0) {
+      {
+        std::lock_guard<std::mutex> lock(data_mutex_);
+        waiting_for_response_ = true;
+      }
+      last_tx_time_ = now;
+    }
   }
 
   // --- シリアルタイムアウト監視 ---

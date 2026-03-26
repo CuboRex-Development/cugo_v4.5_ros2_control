@@ -139,6 +139,11 @@ private:
   // 通信堅牢性設定
   uint32_t max_consecutive_errors_{5};
 
+  // response_lost_timeout 機能
+  double response_lost_timeout_{0.0};
+  bool waiting_for_response_{false};
+  rclcpp::Time last_tx_time_;
+
   // タイミング計測
   rclcpp::Time last_control_loop_time_;
 };
