@@ -142,6 +142,11 @@ void Serial::register_callback(DataCallback callback)
   data_callback_ = callback;
 }
 
+void Serial::flush_buffer()
+{
+  packet_buffer_.clear();
+}
+
 void Serial::start_read()
 {
   serial_port_.async_read_some(
@@ -168,6 +173,14 @@ void Serial::handle_read(const boost::system::error_code & error, std::size_t by
   if (bytes_transferred > 0) {
     packet_buffer_.insert(packet_buffer_.end(), raw_read_buffer_.begin(),
         raw_read_buffer_.begin() + bytes_transferred);
+  }
+
+  // --- 2.5. バッファ上限チェック ---
+  // フレーミングロスト等でデリミタが来ない場合、バッファが肥大化するのを防ぐ
+  if (packet_buffer_.size() > MAX_BUFFER_SIZE) {
+    std::cerr << "[Serial WARN][handle_read] packet_buffer_ overflow ("
+              << packet_buffer_.size() << " bytes). Flushing for resync." << std::endl;
+    packet_buffer_.clear();
   }
 
   // --- 3. バッファからパケットを探索・処理するループ ---

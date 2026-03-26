@@ -134,6 +134,10 @@ private:
 
   // ログ統計
   uint32_t packet_error_count_{0};
+  uint32_t consecutive_error_count_{0};
+
+  // 通信堅牢性設定
+  uint32_t max_consecutive_errors_{5};
 
   // タイミング計測
   rclcpp::Time last_control_loop_time_;

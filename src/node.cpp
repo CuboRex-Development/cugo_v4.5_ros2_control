@@ -47,6 +47,7 @@ Node::Node()
   this->declare_parameter("serial_baudrate", 115200);
   this->declare_parameter("cmd_vel_timeout", 0.5); // 秒
   this->declare_parameter("serial_timeout", 0.5);  // 秒
+  this->declare_parameter("max_consecutive_errors", 5);
   this->declare_parameter("product_id", 10000);
   this->declare_parameter("robot_id", 0);
   // ログ設定パラメータ (INFOレベル)
@@ -88,6 +89,9 @@ Node::Node()
   this->get_parameter("serial_baudrate", serial_baudrate);
   this->get_parameter("cmd_vel_timeout", cmd_vel_timeout_);
   this->get_parameter("serial_timeout", serial_timeout_);
+  int max_consecutive_errors_int;
+  this->get_parameter("max_consecutive_errors", max_consecutive_errors_int);
+  max_consecutive_errors_ = static_cast<uint32_t>(std::max(1, max_consecutive_errors_int));
   this->get_parameter("product_id", pid);
   this->get_parameter("robot_id", rid);
   this->get_parameter("param_info_log", param_info_log_);
@@ -118,17 +122,18 @@ Node::Node()
 
   if (param_info_log_) {
     RCLCPP_INFO(this->get_logger(), "設定パラメータ");
-    RCLCPP_INFO(this->get_logger(), "  odom_frame_id       : %s", odom_frame_id_.c_str());
-    RCLCPP_INFO(this->get_logger(), "  base_link_frame_id  : %s", base_link_frame_id_.c_str());
-    RCLCPP_INFO(this->get_logger(), "  subscribe_topic_name: %s", subscribe_topic_name.c_str());
-    RCLCPP_INFO(this->get_logger(), "  publish_topic_name  : %s", publish_topic_name.c_str());
-    RCLCPP_INFO(this->get_logger(), "  control_frequency   : %f", control_frequency);
-    RCLCPP_INFO(this->get_logger(), "  serial_port         : %s", serial_port.c_str());
-    RCLCPP_INFO(this->get_logger(), "  serial_baudrate     : %d", serial_baudrate);
-    RCLCPP_INFO(this->get_logger(), "  cmd_vel_timeout     : %f", cmd_vel_timeout_);
-    RCLCPP_INFO(this->get_logger(), "  serial_timeout      : %f", serial_timeout_);
-    RCLCPP_INFO(this->get_logger(), "  product_id          : %d", pid);
-    RCLCPP_INFO(this->get_logger(), "  robot_id            : %d", rid);
+    RCLCPP_INFO(this->get_logger(), "  odom_frame_id           : %s", odom_frame_id_.c_str());
+    RCLCPP_INFO(this->get_logger(), "  base_link_frame_id      : %s", base_link_frame_id_.c_str());
+    RCLCPP_INFO(this->get_logger(), "  subscribe_topic_name    : %s", subscribe_topic_name.c_str());
+    RCLCPP_INFO(this->get_logger(), "  publish_topic_name      : %s", publish_topic_name.c_str());
+    RCLCPP_INFO(this->get_logger(), "  control_frequency       : %f", control_frequency);
+    RCLCPP_INFO(this->get_logger(), "  serial_port             : %s", serial_port.c_str());
+    RCLCPP_INFO(this->get_logger(), "  serial_baudrate         : %d", serial_baudrate);
+    RCLCPP_INFO(this->get_logger(), "  cmd_vel_timeout         : %f", cmd_vel_timeout_);
+    RCLCPP_INFO(this->get_logger(), "  serial_timeout          : %f", serial_timeout_);
+    RCLCPP_INFO(this->get_logger(), "  max_consecutive_errors  : %u", max_consecutive_errors_);
+    RCLCPP_INFO(this->get_logger(), "  product_id              : %d", pid);
+    RCLCPP_INFO(this->get_logger(), "  robot_id                : %d", rid);
   }
 
   // 本クラスで実装された通信がサポートされている製品かどうかを、product_idで確認
@@ -288,6 +293,7 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
 
   if (!success) {
     packet_error_count_++;
+    consecutive_error_count_++;
     RCLCPP_WARN_THROTTLE(
         this->get_logger(), *this->get_clock(), 1000,
         "Packet Decode Error: %s", error_msg.c_str());
@@ -296,8 +302,17 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
           this->get_logger(), *this->get_clock(), 1000,
           "[packet error] cumulative count: %u", packet_error_count_);
     }
+    if (consecutive_error_count_ >= max_consecutive_errors_) {
+      serial_->flush_buffer();
+      consecutive_error_count_ = 0;
+      RCLCPP_WARN(
+          this->get_logger(),
+          "[packet error] %u consecutive errors detected. Buffer flushed for resync.",
+          max_consecutive_errors_);
+    }
     return;
   } else {
+    consecutive_error_count_ = 0;
     if (received_speed_log_) {
       RCLCPP_INFO(
           this->get_logger(), "[RX speed] Vx=%lf, Vy=%lf, Omega z=%lf",

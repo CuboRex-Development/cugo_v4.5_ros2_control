@@ -52,6 +52,10 @@ public:
 
   void start_read();
   void register_callback(DataCallback callback);
+  void flush_buffer();
+
+  // packet_buffer_ がこのサイズを超えた場合にフラッシュしてフレーミングを再同期する
+  static constexpr size_t MAX_BUFFER_SIZE = 1024;
 
   // 送信メソッド: 既にエンコード済みのバイト列を受け取る
   void write(const std::vector<uint8_t> & data);
