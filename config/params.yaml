@@ -68,13 +68,22 @@ cugo_v4_5_ros2_control:
     twist_cov_angular_z: 1.0e9
 
     # =============================================
-    # デバッグログ (通常は全て false)
+    # ログ設定 (INFOレベル) - 通常は全て false
     # =============================================
-    # true に設定した場合、log_level:=debug で起動するとログが出力されます。
-    # 詳細は README.md の Parameters 節を参照してください。
+    # true に設定するとノード起動時から出力されます。
 
-    serial_debug_log: false       # 送受信パケット内容 (COBSエンコード前/デコード後)
-    serial_raw_debug_log: false   # 送受信パケット内容 (生データ)
-    callback_debug_log: false     # コールバック・制御ループの実行フロー
-    odom_debug_log: false         # オドメトリ・速度データ
-    param_debug_log: false        # 起動時のデバイスIDパラメータ
+    param_info_log         : true  # 起動時の設定パラメータ一覧
+    odom_pos_info_log      : false # Odometry 位置成分 (x, y, yaw)
+    odom_vel_info_log      : false # Odometry 速度成分 (Vx, Vy, Omega)
+    recv_interval_info_log : false # データ受信間隔 (ms)
+    packet_error_info_log  : true  # パケットデコードエラー統計
+    connection_info_log    : true  # 接続状態変化ログ
+    connection_lost_log    : true  # シリアル通信未達 WARN (再接続待機中に毎ループ出力)
+    received_speed_log     : false # 受信速度 (Vx, Vy, Omega)
+    cmd_vel_log            : false # /cmd_vel で受信した速度指令値
+    tx_cmd_log             : false # 実際に送信した速度指令値
+    loop_interval_log      : false # 制御ループの実行間隔 (ms)
+    handshake_log          : false # ハンドシェイク状態遷移の詳細
+    serial_log             : false # 送受信パケット内容 (COBS後)
+    serial_raw_log         : false # 送受信パケット内容 (生データ)
+    callback_log           : false # コールバック・制御ループの実行フロー

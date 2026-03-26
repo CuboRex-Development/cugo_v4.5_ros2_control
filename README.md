@@ -207,29 +207,33 @@ RViz2 が起動したら、以下の設定を行ってください。
 | `tcp_host`        | `192.168.1.100` | WiFiモード時の接続先IPアドレス（APモードは `192.168.42.1` を指定）     |
 | `tcp_port`        | `8080`          | WiFiモード時の接続先ポート番号                                         |
 
-> [!NOTE]
-> `comm_type`、`tcp_host`、`tcp_port` は launch 引数でも上書きできます。`params.yaml` の値がデフォルトとして使用されます。
-
 ### launch 引数
 
-`log_level`（デフォルト: `info`）: ログレベルを指定します。`debug`, `info`, `warn`, `error`, `fatal` から選択できます。
+以下のパラメータは `params.yaml` の編集に加えて、launch 引数でも上書きできます。
+
+| 引数          | デフォルト値    | 説明                                                        |
+| ------------- | --------------- | ----------------------------------------------------------- |
+| `comm_type`   | `serial`        | 通信方式: `serial` または `wifi`                            |
+| `tcp_host`    | `192.168.1.100` | WiFiモード時の接続先IPアドレス（APモードは `192.168.42.1`） |
+| `tcp_port`    | `8080`          | WiFiモード時の接続先ポート番号                              |
+| `log_level`   | `info`          | ログレベル: `debug`, `info`, `warn`, `error`, `fatal`       |
 
 ### 制御設定
 
 | パラメータ          | デフォルト値 | 説明                                                |
 | ------------------- | ------------ | --------------------------------------------------- |
-| `control_frequency` | `10.0`       | 制御周期 [Hz]（最大 100）                           |
+| `control_frequency` | `10.0`       | 制御周期 [Hz]（最大 50）                            |
 | `cmd_vel_timeout`   | `0.5`        | `/cmd_vel` 受信タイムアウト [秒]（超過で速度ゼロ）  |
 | `serial_timeout`    | `0.5`        | マイコンからの受信タイムアウト [秒]（超過で再接続） |
 
 ### ROS フレーム・トピック設定
 
-| パラメータ             | デフォルト値     | 説明                   |
-| ---------------------- | ---------------- | ---------------------- |
-| `odom_frame_id`        | `odom`           | オドメトリフレーム名   |
-| `base_link_frame_id`   | `base_footprint` | ベースリンクフレーム名 |
-| `subscribe_topic_name` | `/cmd_vel`       | 速度指令トピック名     |
-| `publish_topic_name`   | `/odom`          | オドメトリトピック名   |
+| パラメータ             | デフォルト値 | 説明                                                                          |
+| ---------------------- | ------------ | ----------------------------------------------------------------------------- |
+| `odom_frame_id`        | `odom`       | オドメトリフレーム名                                                          |
+| `base_link_frame_id`   | `base_link`  | ベースリンクフレーム名(params.yaml では `base_footprint`に設定されています。) |
+| `subscribe_topic_name` | `/cmd_vel`   | 速度指令トピック名                                                            |
+| `publish_topic_name`   | `/odom`      | オドメトリトピック名                                                          |
 
 ### デバイスID
 
@@ -252,22 +256,28 @@ RViz2 が起動したら、以下の設定を行ってください。
 | `twist_cov_linear_y`  | `0.0025`     | 線速度 Y 精度（0.05 m/s 相当）                |
 | `twist_cov_angular_z` | `1.0e9`      | 角速度 Z（2次元平面のみのため大きな値に設定） |
 
-### デバッグログ
+### ログ設定
 
-| パラメータ             | デフォルト値 | 説明                                                    |
-| ---------------------- | ------------ | ------------------------------------------------------- |
-| `serial_debug_log`     | `false`      | 送受信パケット内容（COBSエンコード前/デコード後）のログ |
-| `serial_raw_debug_log` | `false`      | 送受信パケット内容（生データ）のログ                    |
-| `callback_debug_log`   | `false`      | コールバック・制御ループの実行フローのログ              |
-| `odom_debug_log`       | `false`      | オドメトリ・速度データのログ                            |
-| `param_debug_log`      | `false`      | 起動時のデバイスIDパラメータのログ                      |
+すべてのログフラグは `false` がデフォルトです。`true` に設定すると、ノード起動時から ログが出力されます。(cugo_v4_5_launch.py で読み取る params.yaml では一部のログが有効化されています。)
 
-> [!NOTE]
-> デバッグログを確認するには、各パラメータを `true` に設定した上で `log_level:=debug` で起動してください。
->
-> ```bash
-> ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py log_level:=debug
-> ```
+| パラメータ               | デフォルト値 | 説明                                        |
+| ------------------------ | ------------ | ------------------------------------------- |
+| `param_info_log`         | `false`      | 起動時の設定パラメータ一覧                  |
+| `odom_pos_info_log`      | `false`      | Odometry 位置成分（x, y, yaw）              |
+| `odom_vel_info_log`      | `false`      | Odometry 速度成分（Vx, Vy, Omega）          |
+| `recv_interval_info_log` | `false`      | データ受信間隔（ms）                        |
+| `packet_error_info_log`  | `false`      | パケットデコードエラー統計（累積件数）      |
+| `connection_info_log`    | `false`      | 接続状態変化ログ（接続・再接続）            |
+| `connection_lost_log`    | `false`      | シリアル通信未達 WARN（再接続待機中に出力） |
+| `received_speed_log`     | `false`      | マイコンから受信した速度（Vx, Vy, Omega）   |
+| `cmd_vel_log`            | `false`      | `/cmd_vel` で受信した速度指令値             |
+| `tx_cmd_log`             | `false`      | マイコンへ実際に送信した速度指令値          |
+| `loop_interval_log`      | `false`      | 制御ループの実行間隔（ms）                  |
+| `handshake_log`          | `false`      | ハンドシェイク状態遷移の詳細                |
+| `serial_log`             | `false`      | 送受信パケット内容（COBSデコード後）        |
+| `serial_raw_log`         | `false`      | 送受信パケット内容（生データ）              |
+| `callback_log`           | `false`      | コールバック・制御ループの実行フロー        |
+
 
 # Topics
 

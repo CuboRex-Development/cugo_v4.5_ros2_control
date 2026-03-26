@@ -113,12 +113,30 @@ private:
   double handshake_timeout_{1.0};
   double handshake_retry_interval_{2.0};
 
-  // デバッグ用フラグ
-  bool serial_debug_log_{false};        // シリアル通信パケット内容 エンコード前/デコード後 ([TX]/[RX])
-  bool serial_raw_debug_log_{false};    // シリアル通信パケット内容 生データ ([TX]/[RX])
-  bool callback_debug_log_{false};  // コールバック・制御ループの実行フロー
-  bool odom_debug_log_{false};      // オドメトリ・速度データ
-  bool param_debug_log_{false};     // 起動時のデバイスIDパラメータ確認
+  // ログ用フラグ (INFO レベル)
+  bool param_info_log_{false};          // 起動時の設定パラメータ一覧
+  bool odom_pos_info_log_{false};       // Odometry 位置成分 (x, y, yaw)
+  bool odom_vel_info_log_{false};       // Odometry 速度成分 (Vx, Vy, Omega)
+  bool recv_interval_info_log_{false};  // データ受信間隔 (ms)
+  bool packet_error_info_log_{false};   // パケットデコードエラー統計
+  bool connection_info_log_{false};     // 接続状態変化
+  bool connection_lost_log_{false};     // シリアル通信未達 WARN
+
+  // ログ用フラグ (INFO レベル・詳細系)
+  bool received_speed_log_{false};  // 受信速度 (Vx, Vy, Omega)
+  bool cmd_vel_log_{false};         // /cmd_vel で受信した速度指令値
+  bool tx_cmd_log_{false};          // 実際に送信した速度指令値
+  bool loop_interval_log_{false};   // 制御ループの実行間隔 (ms)
+  bool handshake_log_{false};       // ハンドシェイク状態遷移の詳細
+  bool serial_log_{false};          // 送受信パケット内容 (COBS後)
+  bool serial_raw_log_{false};      // 送受信パケット内容 (生データ)
+  bool callback_log_{false};        // コールバック・制御ループの実行フロー
+
+  // ログ統計
+  uint32_t packet_error_count_{0};
+
+  // タイミング計測
+  rclcpp::Time last_control_loop_time_;
 };
 
 }  // namespace cugo_v4_5_ros2_control
