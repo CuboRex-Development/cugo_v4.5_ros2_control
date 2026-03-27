@@ -93,7 +93,7 @@ def generate_launch_description():
                 cmd=[
                     'socat',
                     f'PTY,link={VSERIAL_PATH},raw,echo=0',
-                    f'TCP:{tcp_host}:{tcp_port}'
+                    f'TCP:{tcp_host}:{tcp_port},nodelay'
                 ],
                 output='screen',
                 name='socat_wifi_bridge'
