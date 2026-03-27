@@ -18,8 +18,8 @@ cugo_v4_5_ros2_control:
     # comm_type: wifi
 
     # シリアルポート (接続方式に合わせて変更してください)
-    # serial_port    : /dev/ttyACM0
-    serial_port    : /dev/ttyUSB0
+    serial_port    : /dev/ttyACM0
+    # serial_port    : /dev/ttyUSB0
     serial_baudrate: 115200
 
     # WiFi 接続先 (comm_type: wifi のときのみ使用、ご自身の環境に合わせて設定してください。)
