@@ -50,6 +50,14 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 
 <img width="4194" height="769" alt="USB" src="https://github.com/user-attachments/assets/66af2424-27d8-4efd-8315-5d9fad49f2af" />
 
+### BOXコネクタ-Serial接続
+
+CuGo V4.5 本体の BOX コネクタを介して PC とシリアル通信する方式です。
+USB-UART 変換アダプタなどを使用して PC と接続します。
+ROS 側は USB-Serial 接続と同じ `serial` モードのまま使用できます。必要に応じて、シリアルポートのパス（`serial_port`）のみ変更してください
+
+<!-- TODO: BOXコネクタ接続図を追加 -->
+
 ### WiFi APモード
 
 Raspberry Pi Pico 2 WH 自身がアクセスポイントとして動作する方式です。
@@ -131,6 +139,37 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    ```
 
 
+### BOXコネクタ-Serial接続
+
+1. CuGo V4.5 本体の BOX コネクタと PC を USB-シリアル変換アダプタで接続します。
+<!-- TODO:配線方法を書く -->
+
+2. デバイスが認識されているか確認します。
+
+   ```bash
+   ls /dev/ttyUSB*
+   ```
+
+3. シリアルポートへのアクセス権を付与します（環境に合わせてポート名やアクセス権限を変更してください）。
+
+   ```bash
+   sudo chmod 777 /dev/ttyUSB0
+   ```
+
+4. `config/params.yaml` の `serial_port` を接続したポートに変更します（`comm_type: serial` のままで問題ありません）。
+
+   ```yaml
+   cugo_v4_5_ros2_control:
+     ros__parameters:
+       comm_type: serial
+       serial_port: /dev/ttyUSB0   # ← BOXコネクタ接続時のポート名
+   ```
+
+5. ノードを起動します。
+
+   ```bash
+   ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
+   ```
 
 ### WiFi APモード（ルータ不要）
 
