@@ -68,6 +68,7 @@ Node::Node()
   this->declare_parameter("serial_log", false);
   this->declare_parameter("serial_raw_log", false);
   this->declare_parameter("callback_log", false);
+  this->declare_parameter("rtt_log", false);
 
   // 共分散
   this->declare_parameter("pose_cov_x", 0.04);
@@ -118,6 +119,7 @@ Node::Node()
   this->get_parameter("serial_log", serial_log_);
   this->get_parameter("serial_raw_log", serial_raw_log_);
   this->get_parameter("callback_log", callback_log_);
+  this->get_parameter("rtt_log", rtt_log_);
 
   this->get_parameter("pose_cov_x", px);
   this->get_parameter("pose_cov_y", py);
@@ -193,6 +195,7 @@ Node::Node()
   last_serial_receive_time_ = now;
   handshake_last_action_time_ = now;
   last_control_loop_time_ = now;
+  last_tx_time_ = now;
 
   // ROS トピック通信
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -362,6 +365,10 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
 
   if (recv_interval_info_log_ && dt_for_log > 0.0) {
     RCLCPP_INFO(this->get_logger(), "[recv interval] %.1f ms", dt_for_log * 1000.0);
+  }
+  if (rtt_log_) {
+    double rtt_ms = (current_receive_time - last_tx_time_).seconds() * 1000.0;
+    RCLCPP_INFO(this->get_logger(), "[RTT] %.1f ms", rtt_ms);
   }
 
 
@@ -637,13 +644,11 @@ void Node::control_loop()
         this->get_logger(), "[TX] %zu bytes:%s", raw_log.size(), oss.str().c_str());
     }
     serial_->write(packet);
+    last_tx_time_ = now;  // RTTログ計測・response_lost_timeout 機能共通
     // 応答待ち状態に移行 (response_lost_timeout が有効な場合のみ)
     if (response_lost_timeout_ > 0.0) {
-      {
-        std::lock_guard<std::mutex> lock(data_mutex_);
-        waiting_for_response_ = true;
-      }
-      last_tx_time_ = now;
+      std::lock_guard<std::mutex> lock(data_mutex_);
+      waiting_for_response_ = true;
     }
   }
 

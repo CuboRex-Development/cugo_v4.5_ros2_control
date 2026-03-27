@@ -77,7 +77,7 @@ cugo_v4_5_ros2_control:
     param_info_log         : true  # 起動時の設定パラメータ一覧
     odom_pos_info_log      : false # Odometry 位置成分 (x, y, yaw)
     odom_vel_info_log      : false # Odometry 速度成分 (Vx, Vy, Omega)
-    recv_interval_info_log : false # データ受信間隔 (ms)
+    recv_interval_info_log : false  # データ受信間隔 (ms)
     packet_error_info_log  : true  # パケットデコードエラー統計
     connection_info_log    : true  # 接続状態変化ログ
     connection_lost_log    : true  # シリアル通信未達 WARN (再接続待機中に毎ループ出力)
@@ -89,3 +89,4 @@ cugo_v4_5_ros2_control:
     serial_log             : false # 送受信パケット内容 (COBS後)
     serial_raw_log         : false # 送受信パケット内容 (生データ)
     callback_log           : false # コールバック・制御ループの実行フロー
+    rtt_log                : false # リクエスト〜レスポンス往復時間 (ms)

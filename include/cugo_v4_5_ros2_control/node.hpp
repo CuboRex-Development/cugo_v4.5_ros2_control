@@ -131,6 +131,7 @@ private:
   bool serial_log_{false};          // 送受信パケット内容 (COBS後)
   bool serial_raw_log_{false};      // 送受信パケット内容 (生データ)
   bool callback_log_{false};        // コールバック・制御ループの実行フロー
+  bool rtt_log_{false};             // リクエスト〜レスポンス往復時間 (ms)
 
   // ログ統計
   uint32_t packet_error_count_{0};

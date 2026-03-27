@@ -332,6 +332,7 @@ RViz2 が起動したら、以下の設定を行ってください。
 | `serial_log`             | `false`      | 送受信パケット内容（COBSデコード後）        |
 | `serial_raw_log`         | `false`      | 送受信パケット内容（生データ）              |
 | `callback_log`           | `false`      | コールバック・制御ループの実行フロー        |
+| `rtt_log`                | `false`      | リクエスト〜レスポンス往復時間（ms）        |
 
 
 # Topics
