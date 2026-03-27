@@ -373,6 +373,53 @@ cugo_v4.5_ros2_control
 `response_lost_timeout` は `serial_timeout` 未満の値を設定してください。
 `serial_timeout` 以上の値を設定した場合、起動時に自動的に `0`（無効）に補正され、WARNログが出力されます。
 
+## WiFi 通信の安定化について
+
+### WiFi パワーセーブモードの無効化
+
+Linux の WiFi アダプタがパワーセーブモードで動作している場合、受信データが遅延することがあります。
+WiFi 接続時に応答が周期的にロストする（`[response lost]` ログが頻繁に出る）場合は、パワーセーブを無効化することで改善する場合があります。
+
+#### 一時的な無効化（再起動で元に戻る）
+
+```bash
+sudo iw wlan0 set power_save off
+```
+
+有効化されたか確認するには、以下のコマンドを実行してください。`Power Management:off` と表示されれば無効化されています。
+
+```bash
+iwconfig wlan0
+```
+
+#### 恒久的な無効化（再起動後も有効）
+
+NetworkManager を使用している場合は、設定ファイルを追加することで永続化できます。
+
+```bash
+sudo nano /etc/NetworkManager/conf.d/wifi-powersave-off.conf
+```
+
+以下の内容を記述して保存してください。
+
+```ini
+[connection]
+wifi.powersave = 2
+```
+
+保存後、NetworkManager を再起動して反映させてください。
+
+```bash
+sudo systemctl restart NetworkManager
+```
+
+### AP モードと Station モードの通信安定性の比較
+
+WiFi 接続は、APモードよりStation モードの方が通信が安定する傾向があります。
+APモードでの通信遅延が顕著な場合、Stationモードでの運用も検討してください。
+
+> **注意**: どちらのモードでも、Linux 側の WiFi パワーセーブを無効化することを推奨します。
+
 # License
 
 このプロジェクトは Apache License 2.0 のもとで公開されています。詳細は LICENSE をご覧ください。
