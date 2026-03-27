@@ -180,7 +180,6 @@ Node::Node()
     serial_->open(serial_port, serial_baudrate);
 
     serial_->register_callback(std::bind(&Node::serial_data_callback, this, std::placeholders::_1));
-    serial_->start_read(); // 受信ループを開始
   } catch (const std::exception & e) {
     RCLCPP_FATAL(
         this->get_logger(), "Failed to setup serial communication: %s. Shutting down.", e.what());
