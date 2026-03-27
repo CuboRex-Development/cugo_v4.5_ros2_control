@@ -45,34 +45,36 @@ ROS 2 Humble 以降で動作します。
 
 ### USB-Serial 接続 (デフォルト)
 
-PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式です。
+PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式です。  
 追加機器なしに最も簡単に使用できます。
 
 <img width="4194" height="769" alt="USB" src="https://github.com/user-attachments/assets/66af2424-27d8-4efd-8315-5d9fad49f2af" />
 
 ### BOXコネクタ-Serial接続
 
-CuGo V4.5 本体の BOX コネクタを介して PC とシリアル通信する方式です。
-USB-UART 変換アダプタなどを使用して PC と接続します。
-ROS 側は USB-Serial 接続と同じ `serial` モードのまま使用できます。必要に応じて、シリアルポートのパス（`serial_port`）のみ変更してください
+CuGo V4.5 本体の BOX コネクタを介して PC とシリアル通信する方式です。  
+USB-UART 変換アダプタなどを使用して PC と接続するほか、UARTポートを持つ機器とUSBなしに接続が可能です。接続ケーブルは、ご自身でご用意ください。
+ROS 側の設定はは USB-Serial 接続と同じ `serial` モードのまま使用できます。必要に応じて、シリアルポートのパス（`serial_port`）のみ変更してください。
 
-<!-- TODO: BOXコネクタ接続図を追加 -->
+<img width="4193" height="769" alt="UART_BOX" src="https://github.com/user-attachments/assets/6bbd0c41-efdf-4b65-a32e-bf5ceedd2683" />
 
 ### WiFi APモード
 
-Raspberry Pi Pico 2 WH 自身がアクセスポイントとして動作する方式です。
+Raspberry Pi Pico 2 WH 自身がアクセスポイントとして動作する方式です。  
 WiFi ルータを用意せずに無線でロボットを操作できます。
-接続には事前にロボット側の WiFi 設定が必要です（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）。
+接続には事前にロボット側の WiFi 設定が必要です。（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）
 
-<!-- TODO: APモード接続図を追加 -->
+<img width="4193" height="977" alt="WiFi_AP" src="https://github.com/user-attachments/assets/72a4a2ee-1ad5-43bc-9510-1fcc29f251fc" />
+
 
 ### WiFi Stationモード（外部ルータ経由）
 
-外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。
-通信を行うために、WiFiルータが必要です。WiFiルータはご自身でご用意ください。
-接続には事前にロボット側の WiFi 設定が必要です（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）。
+外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。  
+通信を行うために、WiFiルータが必要です。WiFiルータは、ご自身でご用意ください。
+接続には事前にロボット側の WiFi 設定が必要です。（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）
 
-<img width="4194" height="1360" alt="WiFi Station" src="https://github.com/user-attachments/assets/8f83a93d-7343-4791-ad11-65093e72138a" />
+<img width="4193" height="1559" alt="WiFI_Station" src="https://github.com/user-attachments/assets/c32b6186-fb94-409d-bde8-2cfe2e692ac0" />
+
 
 # Requirements
 
@@ -142,21 +144,30 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 ### BOXコネクタ-Serial接続
 
 1. CuGo V4.5 本体の BOX コネクタと PC を USB-シリアル変換アダプタで接続します。
-<!-- TODO:配線方法を書く -->
+   
+   <img width="2248" height="723" alt="ボックスコネクタ" src="https://github.com/user-attachments/assets/ac5aba45-c2ac-437f-b912-c875c6647a30" />
 
-2. デバイスが認識されているか確認します。
+   **J28 ピンアサイン**
+   
+   | ピン番号 | Raspberry Pi Pico 2WH GP |                      機能 |
+   | :-----: | :----------------------: | :-----------------------: |
+   |       7 |           GP8 (UART1 TX) | TxD (ROS側機器のRxDを接続) |
+   |       8 |           GP9 (UART1 RX) | RxD (ROS側機器のTxDを接続) |
+   |      20 |                      GND |                       GND |
+
+3. デバイスが認識されているか確認します。
 
    ```bash
    ls /dev/ttyUSB*
    ```
 
-3. シリアルポートへのアクセス権を付与します（環境に合わせてポート名やアクセス権限を変更してください）。
+4. シリアルポートへのアクセス権を付与します（環境に合わせてポート名やアクセス権限を変更してください）。
 
    ```bash
    sudo chmod 777 /dev/ttyUSB0
    ```
 
-4. `config/params.yaml` の `serial_port` を接続したポートに変更します（`comm_type: serial` のままで問題ありません）。
+5. `config/params.yaml` の `serial_port` を接続したポートに変更します（`comm_type: serial` のままで問題ありません）。
 
    ```yaml
    cugo_v4_5_ros2_control:
@@ -165,7 +176,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
        serial_port: /dev/ttyUSB0   # ← BOXコネクタ接続時のポート名
    ```
 
-5. ノードを起動します。
+6. ノードを起動します。
 
    ```bash
    ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
@@ -265,7 +276,7 @@ RViz2 が起動したら、以下の設定を行ってください。
 | `cmd_vel_timeout`        | `0.5`        | 他ノードからの`/cmd_vel` 受信タイムアウト [秒]（超過で速度ゼロ）                                                                                                                                                                                                                                                        |
 | `serial_timeout`         | `0.5`        | マイコンからの受信タイムアウト [秒]（超過で再接続）。WiFi接続（APモード・Stationモード）では通信レイテンシが有線より高いため、`1.0`〜`2.0` を推奨                                                                                                                                                                       |
 | `max_consecutive_errors` | `5`          | 連続デコードエラーの許容回数。この回数を超えると受信バッファをフラッシュしてフレーミングを再同期します。通信品質が低い環境では大きくし、即座に再同期したい場合は小さくしてください                                                                                                                                      |
-| `response_lost_timeout`  | `0.0`        | 応答ロスト判定時間 [秒]（`0.0` で無効）。ロボットへのリクエスト送信後、この時間内に応答がなければ再度リクエストを送信します。**制御周期が `1 / response_lost_timeout` Hzまで低下する可能性があります。** 通信遅延への対策としてのみ使用してください。詳細は [Note > 通信遅延対策について](#通信遅延対策について) を参照 |
+| `response_lost_timeout`  | `0.0`        | 応答ロスト判定時間 [秒]（`0.0` で無効）。ロボットへのリクエスト送信後、この時間内に応答がなければ再度リクエストを送信します。**値により制御周期が大きく低下する可能性があります。** 通信遅延への対策としてのみ使用してください。詳細は [Note > 通信遅延対策について](#通信遅延対策について) を参照 |
 
 > [!CAUTION]
 > `response_lost_timeout` は通信遅延の対策としてのみ使用してください。0.0以外の値を設定すると制御周期が低下する可能性があります。設定前に必ず [Note > 通信遅延対策について](#通信遅延対策について) を熟読し、適切な値を設定してください。
@@ -327,18 +338,18 @@ RViz2 が起動したら、以下の設定を行ってください。
 
 ### Published Topics
 
-- `/odom` ([nav_msgs/msg/Odometry](https://docs.ros2.org/foxy/api/nav_msgs/msg/Odometry.html))
+- `/odom` ([nav_msgs/msg/Odometry](https://docs.ros2.org/foxy/api/nav_msgs/msg/Odometry.html))  
   ロボットの位置・姿勢・速度情報（オドメトリ）を配信します。マイコンから受け取った車輪速度をもとに計算されます。
 
-- `/tf` ([tf2_msgs/msg/TFMessage](https://docs.ros2.org/foxy/api/tf2_msgs/msg/TFMessage.html))
+- `/tf` ([tf2_msgs/msg/TFMessage](https://docs.ros2.org/foxy/api/tf2_msgs/msg/TFMessage.html))  
   `odom` フレームから `base_footprint` フレームへの座標変換を配信します。
 
-- `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/foxy/api/std_msgs/msg/Bool.html))
+- `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/foxy/api/std_msgs/msg/Bool.html))  
   マイコンとのハンドシェイク（接続確立）状態を配信します。接続中は `true`、未接続または切断時は `false` になります。
 
 ### Subscribed Topics
 
-- `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/foxy/api/geometry_msgs/msg/Twist.html))
+- `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/foxy/api/geometry_msgs/msg/Twist.html))  
   ロボットへの速度指令を受信します。`linear.x`（前後）と `angular.z`（旋回）を使用します。
 
 # TF
@@ -365,6 +376,8 @@ cugo_v4.5_ros2_control
 
 
 ## 通信遅延対策について
+<details> <summary> response_lost_timeout の設定方法 </summary> 
+<div>
 
 ### 概要
 
@@ -412,7 +425,13 @@ cugo_v4.5_ros2_control
 `response_lost_timeout` は `serial_timeout` 未満の値を設定してください。
 `serial_timeout` 以上の値を設定した場合、起動時に自動的に `0`（無効）に補正され、WARNログが出力されます。
 
+</div>
+</details>
+
 ## WiFi 通信の安定化について
+
+<details> <summary> 無線通信が安定しない際の対策例 </summary> 
+<div>
 
 ### WiFi パワーセーブモードの無効化
 
@@ -456,8 +475,9 @@ sudo systemctl restart NetworkManager
 
 WiFi 接続は、APモードよりStation モードの方が通信が安定する傾向があります。
 APモードでの通信遅延が顕著な場合、Stationモードでの運用も検討してください。
+なお、どちらのモードでも、Linux 側の WiFi パワーセーブを無効化することを推奨します。
 
-> **注意**: どちらのモードでも、Linux 側の WiFi パワーセーブを無効化することを推奨します。
+</details>
 
 # License
 
