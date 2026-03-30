@@ -54,9 +54,18 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 
 CuGo V4.5 本体の BOX コネクタを介して PC とシリアル通信する方式です。  
 USB-UART 変換アダプタなどを使用して PC と接続するほか、UARTポートを持つ機器とUSBなしに接続が可能です。接続ケーブルは、ご自身でご用意ください。
-ROS 側の設定はは USB-Serial 接続と同じ `serial` モードのまま使用できます。必要に応じて、シリアルポートのパス（`serial_port`）のみ変更してください。
+ROS 側の設定は USB-Serial 接続と同じ `serial` モードのまま使用できます。必要に応じて、シリアルポートのパス（`serial_port`）のみ変更してください。
 
 <img width="4193" height="769" alt="UART_BOX" src="https://github.com/user-attachments/assets/6bbd0c41-efdf-4b65-a32e-bf5ceedd2683" />
+
+### Bluetoothモード
+
+Classic Bluetooth の SPP（Serial Port Profile）を介して PC とロボット間を無線接続する方式です。
+WiFi ルータが不要で、ペアリング済みのデバイスと直接接続できます。
+接続には事前にペアリングが必要です。詳細は Usage セクションの「Bluetoothモード」を参照してください。
+
+
+<!-- TODO:図の追加 -->
 
 ### WiFi APモード
 
@@ -69,7 +78,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 ### WiFi Stationモード（外部ルータ経由）
 
-外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。  
+外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。
 通信を行うために、WiFiルータが必要です。WiFiルータは、ご自身でご用意ください。
 接続には事前にロボット側の WiFi 設定が必要です。（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）
 
@@ -86,6 +95,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
   - robot_state_publisher
   - joint_state_publisher_gui（URDF確認・デバッグ用）
   - socat（WiFiモード〔APモード・Stationモード〕を使用する場合のみ）
+  - rfcomm / bluez-utils（Bluetoothモードを使用する場合のみ）
 
 # Installation
 
@@ -155,19 +165,19 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    |       8 |           GP9 (UART1 RX) | RxD (ROS側機器のTxDを接続) |
    |      20 |                      GND |                       GND |
 
-3. デバイスが認識されているか確認します。
+2. デバイスが認識されているか確認します。
 
    ```bash
    ls /dev/ttyUSB*
    ```
 
-4. シリアルポートへのアクセス権を付与します（環境に合わせてポート名やアクセス権限を変更してください）。
+3. シリアルポートへのアクセス権を付与します（環境に合わせてポート名やアクセス権限を変更してください）。
 
    ```bash
    sudo chmod 777 /dev/ttyUSB0
    ```
 
-5. `config/params.yaml` の `serial_port` を接続したポートに変更します（`comm_type: serial` のままで問題ありません）。
+4. `config/params.yaml` の `serial_port` を接続したポートに変更します（`comm_type: serial` のままで問題ありません）。
 
    ```yaml
    cugo_v4_5_ros2_control:
@@ -176,7 +186,72 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
        serial_port: /dev/ttyUSB0   # ← BOXコネクタ接続時のポート名
    ```
 
-6. ノードを起動します。
+5. ノードを起動します。
+
+   ```bash
+   ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
+   ```
+
+### Bluetoothモード
+
+ロボット側の Bluetooth SPP 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
+
+> [!IMPORTANT]
+> 以下の手順 1・2 は初回のみ実施してください。
+
+1. PC の Bluetooth でロボットとペアリングします。
+
+   GUI（Bluetooth 設定）または `bluetoothctl` コマンドでペアリングしてください。
+
+   `bluetoothctl` を使用する場合は以下を実行してください。
+
+   ```bash
+   bluetoothctl
+   ```
+
+   `bluetoothctl` 起動後、以下のコマンドを順に実行してください。
+
+   ```text
+   power on
+   scan on
+   # ロボットのデバイス名または MAC アドレスを確認したら scan off
+   scan off
+   pair XX:XX:XX:XX:XX:XX
+   trust XX:XX:XX:XX:XX:XX
+   quit
+   ```
+
+   ペアリング済みデバイスの MAC アドレスは以下で確認できます。
+
+   ```bash
+   bluetoothctl paired-devices
+   ```
+   > [!NOTE]
+   > ペアリング完了後は、デバイスとの接続を実施してもすぐに切断されますが、問題ありません。
+
+2. `rfcomm` コマンドがパスワードなしで実行できるよう sudoers を設定します。
+
+   ```bash
+   sudo gnome-text-editor /etc/sudoers.d/rfcomm-rule
+   ```
+
+   以下を記述して保存してください（`your_username` はご自身のユーザー名に置き換えてください）。
+
+   ```text
+   your_username ALL=(ALL) NOPASSWD: /usr/bin/rfcomm bind /dev/rfcomm0 *
+   ```
+
+3. `config/params.yaml` を編集して `comm_type`、`bt_address`、`bt_channel` を設定します。
+
+   ```yaml
+   cugo_v4_5_ros2_control:
+     ros__parameters:
+       comm_type: bluetooth
+       bt_address: "XX:XX:XX:XX:XX:XX"   # ← ロボットの MAC アドレス
+       bt_channel: 1
+   ```
+
+4. ノードを起動します。
 
    ```bash
    ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
@@ -251,22 +326,26 @@ RViz2 が起動したら、以下の設定を行ってください。
 
 | パラメータ        | デフォルト値    | 説明                                                                                                                |
 | ----------------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `comm_type`       | `serial`        | 通信方式: `serial`（USB）または `wifi`（APモード・Stationモード共通）                                               |
+| `comm_type`       | `serial`        | 通信方式: `serial`（USB）/ `wifi`（APモード・Stationモード共通）/ `bluetooth`（Bluetooth SPP）                      |
 | `serial_port`     | `/dev/ttyACM0`  | シリアルポートのパス（USB接続時）                                                                                   |
 | `serial_baudrate` | `115200`        | ボーレート                                                                                                          |
 | `tcp_host`        | `192.168.1.100` | WiFiモード時の接続先IPアドレス（APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済） |
 | `tcp_port`        | `8080`          | WiFiモード時の接続先ポート番号                                                                                      |
+| `bt_address`      | `""`          | Bluetoothモード時の接続先MACアドレス                                                                                |
+| `bt_channel`      | `1`             | Bluetoothモード時の SPP チャンネル番号（通常は `1`）                                                                |
 
 ### launch 引数
 
 以下のパラメータは `params.yaml` の編集に加えて、launch 引数でも上書きできます。
 
-| 引数        | デフォルト値    | 説明                                                                                                                |
-| ----------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `comm_type` | `serial`        | 通信方式: `serial` または `wifi`                                                                                    |
-| `tcp_host`  | `192.168.1.100` | WiFiモード時の接続先IPアドレス（APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済） |
-| `tcp_port`  | `8080`          | WiFiモード時の接続先ポート番号                                                                                      |
-| `log_level` | `info`          | ログレベル: `debug`, `info`, `warn`, `error`, `fatal`                                                               |
+| 引数          | デフォルト値    | 説明                                                                                                                |
+| ------------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `comm_type`   | `serial`        | 通信方式: `serial` / `wifi` / `bluetooth`                                                                           |
+| `tcp_host`    | `192.168.1.100` | WiFiモード時の接続先IPアドレス（APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済） |
+| `tcp_port`    | `8080`          | WiFiモード時の接続先ポート番号                                                                                      |
+| `bt_address`  | `""`            | Bluetoothモード時の接続先MACアドレス                                                                                |
+| `bt_channel`  | `1`             | Bluetoothモード時の SPP チャンネル番号                                                                              |
+| `log_level`   | `info`          | ログレベル: `debug`, `info`, `warn`, `error`, `fatal`                                                               |
 
 ### 制御設定
 
@@ -387,20 +466,32 @@ cugo_v4.5_ros2_control
 
 ### 仕組み
 
+本プログラムは、`control_frequency`で設定された周期でロボットへのリクエスト信号(速度指令を含む)を送り続けます。
+ロボットはリクエストを受け取ると、現在の速度情報を返答します。
+本プログラムが送信するリクエストは、ロボットからのレスポンスの有無に関わらず常に定期実行されます。
+
+このため、リクエストに対するレスポンスが`control_frequency`の周期より遅れてしまった場合、受信側の機器はリクエストを重複して受け取ることとなり、正常な動作を望めなくなります。
+有線接続で使用する際は遅延のリスクが少なく本動作で問題はないですが、無線接続で使用する際は本現象が発生するリスクが大きくなります。
+この対策として、リクエストの重複送信を防止するパラメータが`response_lost_timeout`です。
+`response_lost_timeout`が0では無い場合、一度リクエストを送信したら、`response_lost_timeout`秒経つまでは再度リクエストを送信しません。
+
+実際の処理の流れ：
+
 1. コントロールループで目標速度コマンドを送信（リクエスト）
 2. 有効なパケットを 1 件受信（レスポンス）したら、次のリクエスト送信を許可
 3. `response_lost_timeout` 秒を超えても応答がない場合、「レスポンスロスト」と判定し次のリクエスト送信を許可
 
 ### 実効制御周波数への影響
 
-`response_lost_timeout` を設定すると、応答が得られない期間は TX が抑制されます。最悪ケースでの実効的な制御周波数は以下のようになります。
+`response_lost_timeout` を設定すると、応答が得られない期間は リクエストの送信 が抑制されます。最悪ケースでの実効的な制御周波数は以下のようになります。
 
 ```
 実効制御周波数 ≈ 1 / response_lost_timeout
 ```
 
 例: `response_lost_timeout = 0.5` の場合、制御周波数は最悪 2 Hz まで低下する可能性があります。
-低周期での制御で問題がない用途にのみ使用してください。
+
+そのため、本機能は低周期での制御で問題がない用途にのみ使用してください。
 
 ### 設定値の下限
 
@@ -420,6 +511,7 @@ cugo_v4.5_ros2_control
 | ------------------------------- | ------------ |
 | USB-Serial（有線）              | `0.0`        |
 | WiFi（APモード・Stationモード） | `0.5`〜`1.0` |
+| Bluetooth SPP                   | `0.5`〜`1.0` |
 
 ### 制約事項
 

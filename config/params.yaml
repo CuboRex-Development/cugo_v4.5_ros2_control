@@ -13,9 +13,10 @@ cugo_v4_5_ros2_control:
     # 通信設定 (接続するロボットに合わせて変更)
     # =============================================
 
-    # 通信方式: "serial" (シリアル接続) または "wifi" (WiFi接続)
+    # 通信方式: "serial" (シリアル接続) / "wifi" (WiFi接続) / "bluetooth" (Bluetooth SPP接続)
     comm_type: serial
     # comm_type: wifi
+    # comm_type: bluetooth
 
     # シリアルポート (接続方式に合わせて変更してください)
     serial_port    : /dev/ttyACM0
@@ -25,6 +26,12 @@ cugo_v4_5_ros2_control:
     # WiFi 接続先 (comm_type: wifi のときのみ使用、ご自身の環境に合わせて設定してください。)
     tcp_host: 192.168.42.1
     tcp_port: 8080
+
+    # Bluetooth 接続先 (comm_type: bluetooth のときのみ使用)
+    # 事前に bluetoothctl でペアリングを完了させてください。
+    # 詳細は README の Usage > Bluetoothモード を参照してください。
+    bt_address: "XX:XX:XX:XX:XX:XX"  # ← ロボットの MAC アドレスに変更してください
+    bt_channel: 1
 
     # =============================================
     # 制御設定
@@ -77,7 +84,7 @@ cugo_v4_5_ros2_control:
     param_info_log         : true  # 起動時の設定パラメータ一覧
     odom_pos_info_log      : false # Odometry 位置成分 (x, y, yaw)
     odom_vel_info_log      : false # Odometry 速度成分 (Vx, Vy, Omega)
-    recv_interval_info_log : false  # データ受信間隔 (ms)
+    recv_interval_info_log : false # データ受信間隔 (ms)
     packet_error_info_log  : true  # パケットデコードエラー統計
     connection_info_log    : true  # 接続状態変化ログ
     connection_lost_log    : true  # シリアル通信未達 WARN (再接続待機中に毎ループ出力)
