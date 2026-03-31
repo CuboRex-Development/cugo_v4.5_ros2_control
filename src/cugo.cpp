@@ -74,13 +74,13 @@ bool CuGo::validate_handshake_response(const std::vector<uint8_t> & packet)
   if(protocol_compatible) {
     if(product_id_ != data.product_id) {
       // プロダクトIDが異なるが、プロトコルは互換性があるため通信可能な場合
-      std::cout << "Product ID Mismatch in Handshake Response. Expected: " << get_state().product_id
+      std::cout << "Product ID Mismatch in Handshake Response. Expected: " << product_id_
                 << ", Received: " << data.product_id << std::endl;
     }
 
     if(robot_id_ != data.robot_id) {
       // ロボットIDが異なるが、プロダクトIDは一致しているので通信可能な場合
-      std::cout << "Robot ID Mismatch in Handshake Response. Expected: " << get_state().robot_id
+      std::cout << "Robot ID Mismatch in Handshake Response. Expected: " << robot_id_
                 << ", Received: " << data.robot_id << std::endl;
     }
 
