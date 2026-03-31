@@ -64,8 +64,8 @@ Classic Bluetooth の SPP（Serial Port Profile）を介して PC とロボッ�
 WiFi ルータが不要で、ペアリング済みのデバイスと直接接続できます。
 接続には事前にペアリングが必要です。詳細は Usage セクションの「Bluetoothモード」を参照してください。
 
+<img width="4194" height="769" alt="BT_SPP" src="https://github.com/user-attachments/assets/ac816541-2169-4943-bc54-e7437820bcce" />
 
-<!-- TODO:図の追加 -->
 
 ### WiFi APモード
 
