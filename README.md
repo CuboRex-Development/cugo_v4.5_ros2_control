@@ -36,7 +36,7 @@ ROS 2 Jazzy Jalisco 以降で動作します。
 
 `/cmd_vel` で受け取った速度指令を [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) に送信し、マイコンから受け取った現在速度をもとにオドメトリを計算して `/odom` として Publish します。
 
-<img width="4077" height="2541" alt="cugo_v4 5_ros2_control" src="https://github.com/user-attachments/assets/49c19ceb-2415-420f-85b9-ba4f251c39da" />
+<img width="4077" height="2541" alt="cugo_v4 5_ros2_control" src="https://github.com/user-attachments/assets/f1fafdfb-5448-4293-af8a-70d4c094e65e" />
 
 
 本ノードを実行しているROS2 PC とCuGo V4.5 との通信方式は USB-Serial をデフォルトとしていますが、その他の通信方式も選択することができます。
@@ -48,7 +48,8 @@ ROS 2 Jazzy Jalisco 以降で動作します。
 PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式です。  
 追加機器なしに最も簡単に使用できます。
 
-<img width="4194" height="769" alt="USB" src="https://github.com/user-attachments/assets/66af2424-27d8-4efd-8315-5d9fad49f2af" />
+<img width="4194" height="769" alt="USB" src="https://github.com/user-attachments/assets/1d0d16b3-4b9c-4172-8e61-97643d443131" />
+
 
 ### BOXコネクタ-Serial接続
 
@@ -56,7 +57,8 @@ CuGo V4.5 本体の BOX コネクタを介して PC とシリアル通信する�
 USB-UART 変換アダプタなどを使用して PC と接続するほか、UARTポートを持つ機器とUSBなしに接続が可能です。接続ケーブルは、ご自身でご用意ください。
 ROS 側の設定は USB-Serial 接続と同じ `serial` モードのまま使用できます。必要に応じて、シリアルポートのパス（`serial_port`）のみ変更してください。
 
-<img width="4193" height="769" alt="UART_BOX" src="https://github.com/user-attachments/assets/6bbd0c41-efdf-4b65-a32e-bf5ceedd2683" />
+<img width="4193" height="769" alt="UART_BOX" src="https://github.com/user-attachments/assets/9764360b-66bd-4714-a145-e1018a2f05e5" />
+
 
 ### Bluetoothモード
 
@@ -64,7 +66,7 @@ Classic Bluetooth の SPP（Serial Port Profile）を介して PC とロボッ�
 WiFi ルータが不要で、ペアリング済みのデバイスと直接接続できます。
 接続には事前にペアリングが必要です。詳細は Usage セクションの「Bluetoothモード」を参照してください。
 
-<img width="4194" height="769" alt="BT_SPP" src="https://github.com/user-attachments/assets/ac816541-2169-4943-bc54-e7437820bcce" />
+<img width="4194" height="769" alt="BT_SPP" src="https://github.com/user-attachments/assets/2e9734c6-8ad2-427f-8452-cbab96952714" />
 
 
 ### WiFi APモード
@@ -73,7 +75,7 @@ Raspberry Pi Pico 2 WH 自身がアクセスポイントとして動作する方
 WiFi ルータを用意せずに無線でロボットを操作できます。
 接続には事前にロボット側の WiFi 設定が必要です。（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）
 
-<img width="4193" height="977" alt="WiFi_AP" src="https://github.com/user-attachments/assets/72a4a2ee-1ad5-43bc-9510-1fcc29f251fc" />
+<img width="4193" height="977" alt="WiFi_AP" src="https://github.com/user-attachments/assets/aa6cbac5-d754-47f9-87b2-44292449d4e2" />
 
 
 ### WiFi Stationモード（外部ルータ経由）
@@ -82,7 +84,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 通信を行うために、WiFiルータが必要です。WiFiルータは、ご自身でご用意ください。
 接続には事前にロボット側の WiFi 設定が必要です。（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）
 
-<img width="4193" height="1559" alt="WiFI_Station" src="https://github.com/user-attachments/assets/c32b6186-fb94-409d-bde8-2cfe2e692ac0" />
+<img width="4193" height="1559" alt="WiFI_Station" src="https://github.com/user-attachments/assets/8a3db4d3-c379-4bb2-9c4b-9993e35b1d1e" />
 
 
 # Requirements
@@ -155,7 +157,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 1. CuGo V4.5 本体の BOX コネクタと PC を USB-シリアル変換アダプタで接続します。
    
-   <img width="2248" height="723" alt="ボックスコネクタ" src="https://github.com/user-attachments/assets/ac5aba45-c2ac-437f-b912-c875c6647a30" />
+   <img width="2248" height="723" alt="ボックスコネクタ" src="https://github.com/user-attachments/assets/8c8e809c-5500-44a4-ad43-a3b5945c6a83" />
 
    **J28 ピンアサイン**
    
@@ -164,6 +166,11 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    |       7 |           GP8 (UART1 TX) | TxD (ROS側機器のRxDを接続) |
    |       8 |           GP9 (UART1 RX) | RxD (ROS側機器のTxDを接続) |
    |      20 |                      GND |                       GND |
+   
+  > [!TIP]
+  > 適合コネクタ例(参考)
+  > ハウジング：日本航空電子工業社製 PS-D4C20
+  > コンタクト：日本航空電子工業社製 030-51307-001 など
 
 2. デバイスが認識されているか確認します。
 
@@ -226,8 +233,8 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    ```bash
    bluetoothctl paired-devices
    ```
-   > [!NOTE]
-   > ペアリング完了後は、デバイスとの接続を実施してもすぐに切断されますが、問題ありません。
+> [!NOTE]
+> ペアリング完了後は、デバイスとの接続を実施してもすぐに切断されますが、問題ありません。
 
 2. `rfcomm` コマンドがパスワードなしで実行できるよう sudoers を設定します。
 
