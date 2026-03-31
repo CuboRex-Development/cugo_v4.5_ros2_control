@@ -96,13 +96,13 @@ void CuGo::update_state(const RobotState & state, double dt)
   current_state_ = state;
 
   // オドメトリ計算 (単純なオイラー積分)
-  double next_yaw = current_pose_.yaw + state.angular_z * dt;
-  double delta_x = (state.linear_x * std::cos(next_yaw) - state.linear_y * std::sin(next_yaw)) * dt;
-  double delta_y = (state.linear_x * std::sin(next_yaw) + state.linear_y * std::cos(next_yaw)) * dt;
+  double current_yaw = current_pose_.yaw;
+  double delta_x = (state.linear_x * std::cos(current_yaw) - state.linear_y * std::sin(current_yaw)) * dt;
+  double delta_y = (state.linear_x * std::sin(current_yaw) + state.linear_y * std::cos(current_yaw)) * dt;
 
   current_pose_.x += delta_x;
   current_pose_.y += delta_y;
-  current_pose_.yaw = next_yaw;
+  current_pose_.yaw += state.angular_z * dt;
 }
 
 std::vector<uint8_t> CuGo::create_command_packet(double linear_x, double linear_y, double angular_z)

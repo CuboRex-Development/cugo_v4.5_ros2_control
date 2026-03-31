@@ -8,7 +8,7 @@ CuGo V4.5 用 ROS 2 コントロールノードです。
 `/cmd_vel` を Subscribe してロボットに速度指令を送信し、`/odom` と `/tf` を Publish します。
 マイコン側のスケッチ [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) と組み合わせて使用します。
 
-ROS 2 Humble 以降で動作します。
+ROS 2 Jazzy Jalisco 以降で動作します。
 
 ### 対応製品
 
@@ -159,7 +159,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
    **J28 ピンアサイン**
    
-   | ピン番号 | Raspberry Pi Pico 2WH GP |                      機能 |
+   | ピン番号 | Raspberry Pi Pico 2 WH GP |                      機能 |
    | :-----: | :----------------------: | :-----------------------: |
    |       7 |           GP8 (UART1 TX) | TxD (ROS側機器のRxDを接続) |
    |       8 |           GP9 (UART1 RX) | RxD (ROS側機器のTxDを接続) |

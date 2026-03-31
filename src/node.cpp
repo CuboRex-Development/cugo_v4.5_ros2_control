@@ -377,9 +377,9 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
   // （cugo_の状態はupdate_stateで更新済み）
   if (should_publish) {
     publish_odom_and_tf();
-  if (callback_log_) {
-    RCLCPP_INFO(this->get_logger(), "serial_data_callback() published");
-  }
+    if (callback_log_) {
+      RCLCPP_INFO(this->get_logger(), "serial_data_callback() published");
+    }
   }
 }
 
@@ -411,7 +411,7 @@ void Node::control_loop()
   // --- 再接続処理 (ハンドシェイク前に実行し、接続状態に関わらず到達できるようにする) ---
   if (connection_state_ == ConnectionState::RECONNECTING) {
     // 3秒に一回だけ再接続を試みる
-    if ((now - last_reconnect_attmpt_time_).seconds() > 3.0) {
+    if ((now - last_reconnect_attempt_time_).seconds() > 3.0) {
       if (connection_info_log_) {
         RCLCPP_INFO(this->get_logger(), "[connection] Trying to reconnect...");
       }
@@ -439,7 +439,7 @@ void Node::control_loop()
         latest_cmd_vel_ = geometry_msgs::msg::Twist();  // 再接続後は速度ゼロから開始
         waiting_for_response_ = false;  // response_lost_timeout 機能をリセット
       }
-      last_reconnect_attmpt_time_ = now;
+      last_reconnect_attempt_time_ = now;
     }
 
     // 再接続待機中はゼロ速度オドメトリを発行して終了
@@ -663,7 +663,7 @@ void Node::control_loop()
         RCLCPP_INFO(this->get_logger(), "[connection] State: CONNECTED -> RECONNECTING");
       }
       connection_state_ = ConnectionState::RECONNECTING;
-      last_reconnect_attmpt_time_ = now;
+      last_reconnect_attempt_time_ = now;
 
       std::lock_guard<std::mutex> lock(data_mutex_);
       is_handshake_done_ = false;

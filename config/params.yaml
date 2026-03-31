@@ -37,11 +37,11 @@ cugo_v4_5_ros2_control:
     # 制御設定
     # =============================================
 
-    control_frequency     : 10.0 # 制御周期 [Hz] (通常 10Hz、最大 20Hz 程度（無線接続時）、最大 50Hz（優先接続時）)
+    control_frequency     : 10.0 # 制御周期 [Hz] (通常 10Hz、最大 20Hz 程度（無線接続時）、最大 50Hz（有先接続時）)
     cmd_vel_timeout       :  0.5 # /cmd_vel 受信タイムアウト [秒] (超過で速度ゼロ)
     serial_timeout        :  0.5 # マイコン通信タイムアウト [秒] (WiFi接続時は 1.0〜2.0 を推奨)
     max_consecutive_errors:  5   # 連続デコードエラー許容回数 (超過でバッファフラッシュ・再同期)
-    response_lost_timeout :  0.0 # 応答ロスト判定時間 [秒] (0で無効。詳細はREADME Noteセクション参照)
+    response_lost_timeout :  0.0 # 応答ロスト判定時間 [秒] (0で無効。README Noteをよく確認の上、値を変更してください。)
 
     # =============================================
     # ROS フレーム・トピック設定
@@ -93,7 +93,7 @@ cugo_v4_5_ros2_control:
     tx_cmd_log             : false # 実際に送信した速度指令値
     loop_interval_log      : false # 制御ループの実行間隔 (ms)
     handshake_log          : false # ハンドシェイク状態遷移の詳細
-    serial_log             : false # 送受信パケット内容 (COBS後)
+    serial_log             : false # 送受信パケット内容 (COBS エンコード前/デコード後)
     serial_raw_log         : false # 送受信パケット内容 (生データ)
     callback_log           : false # コールバック・制御ループの実行フロー
     rtt_log                : false # リクエスト〜レスポンス往復時間 (ms)

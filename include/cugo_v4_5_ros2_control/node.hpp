@@ -82,7 +82,7 @@ private:
 
   // データ共有
   ConnectionState connection_state_{ConnectionState::CONNECTED};
-  rclcpp::Time last_reconnect_attmpt_time_;
+  rclcpp::Time last_reconnect_attempt_time_;
   std::mutex data_mutex_;
   geometry_msgs::msg::Twist latest_cmd_vel_;
   rclcpp::Time last_cmd_vel_time_;

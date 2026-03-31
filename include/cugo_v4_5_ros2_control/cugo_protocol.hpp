@@ -151,7 +151,7 @@ private:
      * @brief 引数に渡された2つのPIDが、通信プロトコルに対応しているか確認します。
      * @return 対応していればtrue、そうでなければfalse
      */
-  static bool is_Protocol_Compatible(
+  static bool is_protocol_compatible(
     const uint16_t received_product_id,
     const uint16_t expected_product_id);
 

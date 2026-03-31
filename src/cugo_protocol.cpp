@@ -146,7 +146,7 @@ bool CugoProtocol::deserialize(
     }
 
       // プロトコル整合性のチェック
-    if (!is_Protocol_Compatible(body_pid, out_state.product_id)) {
+    if (!is_protocol_compatible(body_pid, out_state.product_id)) {
       error_msg = "Protocol Incompatible";
       return false;
     }
@@ -167,7 +167,6 @@ bool CugoProtocol::deserialize(
   // --- ハンドシェイク用 (RobotStateを使用) ---
 std::vector<uint8_t> CugoProtocol::serialize_handshake(const RobotState & expected_state)
 {
-    // 構成: [PID(2byte)] [RID(2byte)] [Checksum(2byte)] = 6bytes
     // RobotStateのうち、IDのみを使用し、速度情報は無視する
   std::vector<uint8_t> raw_packet(HANDSHAKE_PACKET_SIZE, 0);
 
@@ -246,7 +245,7 @@ bool CugoProtocol::deserialize_handshake(
   }
 
     // プロトコル整合性チェック
-  if (!is_Protocol_Compatible(received_pid, expected_state.product_id)) {
+  if (!is_protocol_compatible(received_pid, expected_state.product_id)) {
     return false;
   }
 
@@ -283,7 +282,7 @@ uint16_t CugoProtocol::calc_checksum(const uint8_t *data, size_t size)
   return ~static_cast<uint16_t>(sum);
 }
 
-bool CugoProtocol::is_Protocol_Compatible(
+bool CugoProtocol::is_protocol_compatible(
   const uint16_t received_product_id,
   const uint16_t expected_product_id)
 {
