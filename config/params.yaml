@@ -30,7 +30,7 @@ cugo_v4_5_ros2_control:
     # Bluetooth 接続先 (comm_type: bluetooth のときのみ使用)
     # 事前に bluetoothctl でペアリングを完了させてください。
     # 詳細は README の Usage > Bluetoothモード を参照してください。
-    bt_address: "XX:XX:XX:XX:XX:XX"  # ← ロボットの MAC アドレスに変更してください
+    bt_address: "XX:XX:XX:XX:XX:XX"  # ← ロボットに搭載されたRaspberry Pi Pico 2 WHの MAC アドレスに変更してください
     bt_channel: 1
 
     # =============================================
@@ -42,6 +42,18 @@ cugo_v4_5_ros2_control:
     serial_timeout        :  0.5 # マイコン通信タイムアウト [秒] (WiFi接続時は 1.0〜2.0 を推奨)
     max_consecutive_errors:  5   # 連続デコードエラー許容回数 (超過でバッファフラッシュ・再同期)
     response_lost_timeout :  0.0 # 応答ロスト判定時間 [秒] (0で無効。README Noteをよく確認の上、値を変更してください。)
+
+    # オドメトリ積分方式: "midpoint" (修正オイラー法) / "analytic" (解析解)
+    # midpoint : ヨー角の中間点を使って変位を計算する修正オイラー法。誤差 O(dt²)。通常はこちらを推奨。
+    # analytic : dt 内で速度が一定と仮定した弧積分の厳密解。旋回動作が多い用途や高精度要求時に有効。
+    #            angular_z が odometry_analytic_angular_z_threshold 未満のときは midpoint にフォールバック。
+    odometry_method: midpoint
+    # odometry_method: analytic
+
+    # 解析法において angular_z が「小さい」とみなすしきい値 [rad/s]
+    # この値未満のとき、解析解の代わりに修正オイラー法を使用する (ゼロ除算回避)
+    # デフォルト: π/1000 ≒ 0.003142 rad/s
+    odometry_analytic_angular_z_threshold: 0.003141592653589793
 
     # =============================================
     # ROS フレーム・トピック設定

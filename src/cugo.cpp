@@ -41,6 +41,12 @@ void CuGo::set_covariance(
   twist_covariance_ = twist_cov;
 }
 
+void CuGo::set_odometry_config(OdometryMethod method, double angular_z_threshold)
+{
+  odometry_method_ = method;
+  angular_z_threshold_ = angular_z_threshold;
+}
+
 // ハンドシェイクパケット作成 (RobotStateを使用)
 std::vector<uint8_t> CuGo::create_handshake_packet()
 {
@@ -95,14 +101,32 @@ void CuGo::update_state(const RobotState & state, double dt)
   // 速度情報の保存
   current_state_ = state;
 
-  // オドメトリ計算 (単純なオイラー積分)
-  double current_yaw = current_pose_.yaw;
-  double delta_x = (state.linear_x * std::cos(current_yaw) - state.linear_y * std::sin(current_yaw)) * dt;
-  double delta_y = (state.linear_x * std::sin(current_yaw) + state.linear_y * std::cos(current_yaw)) * dt;
+  double delta_x, delta_y;
+  const double yaw_new = current_pose_.yaw + state.angular_z * dt;
 
-  current_pose_.x += delta_x;
-  current_pose_.y += delta_y;
-  current_pose_.yaw += state.angular_z * dt;
+  if (odometry_method_ == OdometryMethod::ANALYTIC &&
+      std::abs(state.angular_z) >= angular_z_threshold_)
+  {
+    // オドメトリ計算 (解析解: 弧積分)
+    // dt 内で速度が一定と仮定した厳密解
+    const double inv_w  = 1.0 / state.angular_z;
+    const double sin_new = std::sin(yaw_new);
+    const double cos_new = std::cos(yaw_new);
+    const double sin_cur = std::sin(current_pose_.yaw);
+    const double cos_cur = std::cos(current_pose_.yaw);
+    delta_x = inv_w * ( state.linear_x * (sin_new - sin_cur) + state.linear_y * (cos_new - cos_cur));
+    delta_y = inv_w * (-state.linear_x * (cos_new - cos_cur) + state.linear_y * (sin_new - sin_cur));
+  } else {
+    // オドメトリ計算 (修正オイラー法: 中点法)
+    // angular_z が小さいとき、または積分方式が midpoint のときに使用
+    const double yaw_mid = current_pose_.yaw + state.angular_z * dt * 0.5;
+    delta_x = (state.linear_x * std::cos(yaw_mid) - state.linear_y * std::sin(yaw_mid)) * dt;
+    delta_y = (state.linear_x * std::sin(yaw_mid) + state.linear_y * std::cos(yaw_mid)) * dt;
+  }
+
+  current_pose_.x   += delta_x;
+  current_pose_.y   += delta_y;
+  current_pose_.yaw  = yaw_new;
 }
 
 std::vector<uint8_t> CuGo::create_command_packet(double linear_x, double linear_y, double angular_z)

@@ -19,10 +19,17 @@
 #include "cugo_v4_5_ros2_control/cugo_protocol.hpp"
 #include <cmath>
 #include <array>
+#include <string>
 #include <vector>
 
 namespace cugo_v4_5_ros2_control
 {
+
+enum class OdometryMethod
+{
+  MIDPOINT,  // 修正オイラー法 (中点法)
+  ANALYTIC,  // 解析解 (弧積分)
+};
 
 class CuGo
 {
@@ -36,6 +43,8 @@ public:
   void set_covariance(
     const std::array<double, 36> & pose_cov,
     const std::array<double, 36> & twist_cov);
+  // オドメトリ積分方式設定
+  void set_odometry_config(OdometryMethod method, double angular_z_threshold);
 
   // --- ハンドシェイク・判定系 ---
   /**
@@ -79,6 +88,10 @@ private:
   // パラメータ
   std::array<double, 36> pose_covariance_;
   std::array<double, 36> twist_covariance_;
+
+  // オドメトリ積分設定
+  OdometryMethod odometry_method_{OdometryMethod::MIDPOINT};
+  double angular_z_threshold_{M_PI / 1000.0};
 };
 
 }  // namespace cugo_v4_5_ros2_control

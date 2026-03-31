@@ -51,6 +51,9 @@ Node::Node()
   this->declare_parameter("response_lost_timeout", 0.0);
   this->declare_parameter("product_id", 10000);
   this->declare_parameter("robot_id", 0);
+  // オドメトリ積分方式
+  this->declare_parameter("odometry_method", std::string("midpoint"));
+  this->declare_parameter("odometry_analytic_angular_z_threshold", M_PI / 1000.0);
   // ログ設定パラメータ (INFOレベル)
   this->declare_parameter("param_info_log", false);
   this->declare_parameter("odom_pos_info_log", false);
@@ -104,6 +107,10 @@ Node::Node()
   }
   this->get_parameter("product_id", pid);
   this->get_parameter("robot_id", rid);
+  std::string odometry_method_str;
+  double odometry_analytic_angular_z_threshold;
+  this->get_parameter("odometry_method", odometry_method_str);
+  this->get_parameter("odometry_analytic_angular_z_threshold", odometry_analytic_angular_z_threshold);
   this->get_parameter("param_info_log", param_info_log_);
   this->get_parameter("odom_pos_info_log", odom_pos_info_log_);
   this->get_parameter("odom_vel_info_log", odom_vel_info_log_);
@@ -146,6 +153,8 @@ Node::Node()
     RCLCPP_INFO(this->get_logger(), "  response_lost_timeout   : %f", response_lost_timeout_);
     RCLCPP_INFO(this->get_logger(), "  product_id              : %d", pid);
     RCLCPP_INFO(this->get_logger(), "  robot_id                : %d", rid);
+    RCLCPP_INFO(this->get_logger(), "  odometry_method         : %s", odometry_method_str.c_str());
+    RCLCPP_INFO(this->get_logger(), "  analytic_angular_z_thr  : %f", odometry_analytic_angular_z_threshold);
   }
 
   // 本クラスで実装された通信がサポートされている製品かどうかを、product_idで確認
@@ -176,6 +185,20 @@ Node::Node()
 
   cugo_->set_identity(static_cast<uint16_t>(pid), static_cast<uint16_t>(rid));
   cugo_->set_covariance(pose_cov, twist_cov);
+
+  OdometryMethod odometry_method;
+  if (odometry_method_str == "analytic") {
+    odometry_method = OdometryMethod::ANALYTIC;
+  } else {
+    if (odometry_method_str != "midpoint") {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "Unknown odometry_method \"%s\". Falling back to \"midpoint\".",
+        odometry_method_str.c_str());
+    }
+    odometry_method = OdometryMethod::MIDPOINT;
+  }
+  cugo_->set_odometry_config(odometry_method, odometry_analytic_angular_z_threshold);
 
   // Serial通信の開始
   try {
