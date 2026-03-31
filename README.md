@@ -80,7 +80,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 ### WiFi Stationモード（外部ルータ経由）
 
-外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。
+外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。  
 通信を行うために、WiFiルータが必要です。WiFiルータは、ご自身でご用意ください。
 接続には事前にロボット側の WiFi 設定が必要です。（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）
 
@@ -168,8 +168,8 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    |      20 |                      GND |                       GND |
    
   > [!TIP]
-  > 適合コネクタ例(参考)
-  > ハウジング：日本航空電子工業社製 PS-D4C20
+  > 適合コネクタ例(参考)  
+  > ハウジング：日本航空電子工業社製 PS-D4C20  
   > コンタクト：日本航空電子工業社製 030-51307-001 など
 
 2. デバイスが認識されているか確認します。
@@ -264,7 +264,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
    ```
 
-### WiFi APモード（ルータ不要）
+### WiFi APモード
 
 ロボット側の WiFi AP 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
 
