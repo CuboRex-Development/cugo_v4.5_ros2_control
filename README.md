@@ -76,7 +76,7 @@ Raspberry Pi Pico 2 W 自身がアクセスポイントとして動作し、 TCP
 WiFi ルータを用意せずに無線でロボットを操作できます。
 接続には事前にロボット側の WiFi 設定が必要です。([cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照)
 
-<img width="4193" height="977" alt="WiFi_AP" src="https://github.com/user-attachments/assets/aa6cbac5-d754-47f9-87b2-44292449d4e2" />
+<img width="4194" height="976" alt="WIFI_AP" src="https://github.com/user-attachments/assets/4bbf264b-b8f3-4d30-89ce-3272c1721563" />
 
 
 ### WiFi Stationモード
@@ -85,7 +85,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 通信を行うために、WiFiルータが必要です。WiFiルータは、ご自身でご用意ください。
 接続には事前にロボット側の WiFi 設定が必要です。([cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照)
 
-<img width="4193" height="1559" alt="WiFI_Station" src="https://github.com/user-attachments/assets/8a3db4d3-c379-4bb2-9c4b-9993e35b1d1e" />
+<img width="4193" height="1558" alt="WiFI_STA" src="https://github.com/user-attachments/assets/c3c286bf-0dbe-4675-84a8-cbf344140c9a" />
 
 
 # Requirements
