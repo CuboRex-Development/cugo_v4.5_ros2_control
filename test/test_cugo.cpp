@@ -15,135 +15,126 @@
 */
 
 #include <gtest/gtest.h>
+#include "cugo_v4_5_ros2_control/cugo.hpp"
 
-#include "cugo_ros2_control2/cugo.hpp"
-
-using namespace cugo_ros2_control2;
+using namespace cugo_v4_5_ros2_control;
 
 // テストフィクスチャ
 class CuGoTest : public ::testing::Test
 {
 protected:
+  // パラメータなしコンストラクタを使用
+  CuGo cugo;
+
   void SetUp() override
   {
-    // 必要に応じて初期化
+    // テスト用にIDを設定
+    cugo.set_identity(10000, 1);
   }
 
   void TearDown() override
   {
     // 必要に応じてクリーンアップ
   }
-
-  // デフォルトコンストラクタで初期化された CuGo インスタンス
-  //CuGo cugo_default;
-
-  // パラメータ付きコンストラクタで初期化された CuGo インスタンス
-  CuGo cugo{0.03858f, 0.03858f, 0.376f, 20.0f, 360};
 };
 
-// 初期化パラメータなど固定なものの代入が正しいか
-/* クラス構成的に不必要なメソッド TODO: 問題ないことを確認して削除
-TEST_F(CuGoTest, test_initialize)
+// ハンドシェイク応答検証ロジックのテスト (新規追加)
+// 以前の validate_handshake_response の修正が効いているか確認
+TEST_F(CuGoTest, test_validate_handshake)
 {
-  ASSERT_EQ(cugo_default.get_tread(), 0.376f);
-  ASSERT_EQ(cugo_default.get_l_wheel_radius(), 0.03858f);
-  ASSERT_EQ(cugo_default.get_r_wheel_radius(), 0.03858f);
-  ASSERT_EQ(cugo_custom.get_tread(), 0.8f);
-  ASSERT_EQ(cugo_custom.get_l_wheel_radius(), 0.044f);
-  ASSERT_EQ(cugo_custom.get_r_wheel_radius(), 0.045f);
-  ASSERT_EQ(cugo_custom.get_reduction_ratio(), 10.0f);
-  ASSERT_EQ(cugo_custom.get_encoder_resolution(), 160);
-}
-*/
+  // 1. 期待されるIDを持つパケットを作成
+  RobotState expected;
+  expected.product_id = 10000;
+  expected.robot_id = 1;
+  std::vector<uint8_t> valid_packet = CugoProtocol::serialize_handshake(expected);
 
-// calc_rpm()の出力値テスト
-TEST_F(CuGoTest, test_calc_rpm)
-{
-  // 速度0入力
-  float linear_x = 0.0f;
-  float angular_z = 0.0f;
-  RPM rpm = cugo.calc_rpm(linear_x, angular_z);
-  ASSERT_EQ(rpm.l_rpm, 0.0f);
-  ASSERT_EQ(rpm.r_rpm, 0.0f);
+  // 検証: 成功すべき
+  bool result = cugo.validate_handshake_response(valid_packet);
+  EXPECT_TRUE(result) << "正しいIDのパケットは承認されるべき";
 
-  // 前後進のみ入力
-  linear_x = 0.5f;
-  angular_z = 0.0f;
-  rpm = cugo.calc_rpm(linear_x, angular_z);
-  ASSERT_NEAR(rpm.l_rpm, 123.7596758f, 1e-2);
-  ASSERT_NEAR(rpm.r_rpm, 123.7596758f, 1e-2);
+  // 2. 異なるIDを持つパケットを作成
+  RobotState wrong = expected;
+  wrong.robot_id = 99;
+  std::vector<uint8_t> invalid_packet = CugoProtocol::serialize_handshake(wrong);
 
-  // 回転のみ入力
-  linear_x = -0.5f;
-  angular_z = 0.0f;
-  rpm = cugo.calc_rpm(linear_x, angular_z);
-  ASSERT_NEAR(rpm.l_rpm, -123.7596758f, 1e-2);
-  ASSERT_NEAR(rpm.r_rpm, -123.7596758f, 1e-2);
-
-  // 曲がりながら走行するベクトルを入力
-  linear_x = 0.5f;
-  angular_z = 1.0f;
-  rpm = cugo.calc_rpm(linear_x, angular_z);
-  ASSERT_NEAR(rpm.l_rpm, 77.22603771f, 1e-2);
-  ASSERT_NEAR(rpm.r_rpm, 170.2933139f, 1e-2);
+  // 検証: 失敗すべき
+  result = cugo.validate_handshake_response(invalid_packet);
+  EXPECT_FALSE(result) << "誤ったIDのパケットは拒否されるべき";
 }
 
-// エンコーダカウントから計算するtwistが正しいか
-TEST_F(CuGoTest, test_calc_twist)
+// オドメトリ計算のテスト
+// RobotStateの累積が正しいかどうか
+TEST_F(CuGoTest, test_update_state_odometry)
 {
-  Twist twist;
-  twist = cugo.calc_twist(0, 0, 0.1);
-  ASSERT_NEAR(twist.linear_x, 0.0, 1e-4);
-  ASSERT_NEAR(twist.angular_z, 0.0, 1e-4);
+  // 初期状態確認
+  Pose2D pose = cugo.get_pose();
+  ASSERT_NEAR(pose.x, 0.0, 1e-4);
+  ASSERT_NEAR(pose.y, 0.0, 1e-4);
+  ASSERT_NEAR(pose.yaw, 0.0, 1e-4);
 
-  twist = cugo.calc_twist(100, 100, 0.1);
-  ASSERT_NEAR(twist.linear_x, 0.03366740127, 1e-4);
-  ASSERT_NEAR(twist.angular_z, 0.0, 1e-4);
+  // 1. 直進: 0.5 m/s で 0.1秒
+  RobotState state;
+  state.linear_x = 0.5;
+  state.linear_y = 0.0;
+  state.angular_z = 0.0;
+  double dt = 0.1;
 
-  twist = cugo.calc_twist(100, -100, 0.1);
-  ASSERT_NEAR(twist.linear_x, 0.0, 1e-4);
-  ASSERT_NEAR(twist.angular_z, -0.1790819217, 1e-4);
+  cugo.update_state(state, dt);
+  pose = cugo.get_pose();
 
-  twist = cugo.calc_twist(200, 100, 0.1);
-  ASSERT_NEAR(twist.linear_x, 0.0505011019, 1e-4);
-  ASSERT_NEAR(twist.angular_z, -0.08954096082, 1e-4);
+  ASSERT_NEAR(pose.x, 0.05, 1e-4);
+  ASSERT_NEAR(pose.y, 0.0, 1e-4);
+  ASSERT_NEAR(pose.yaw, 0.0, 1e-4);
+
+  // 2. 旋回: 0.3 m/s, 1.57 rad/s で 0.1秒
+  state.linear_x = 0.3;
+  state.angular_z = 1.57;
+
+  cugo.update_state(state, dt);
+  pose = cugo.get_pose();
+
+  // 期待値計算 (オイラー積分: x += v*cos(yaw)*dt, yaw += w*dt)
+  // yaw_new = 0.0 + 0.157 = 0.157
+  // x_new = 0.05 + 0.3 * cos(0.157) * 0.1
+  //
+  // next_yaw = 0.157
+  // dx = 0.3 * cos(0.157) * 0.1 = 0.03 * 0.9876 = 0.0296
+  // dy = 0.3 * sin(0.157) * 0.1 = 0.03 * 0.1564 = 0.00469
+
+  ASSERT_NEAR(pose.x, 0.05 + (0.3 * std::cos(0.157) * 0.1), 1e-4);
+  ASSERT_NEAR(pose.y, 0.0 + (0.3 * std::sin(0.157) * 0.1), 1e-4);
+  ASSERT_NEAR(pose.yaw, 0.157, 1e-4);
+
+  // 2. 旋回: 0.5 m/s, -3.14 rad/s で 0.1秒
+  state.linear_x = 0.5;
+  state.angular_z = -3.14;
+
+  cugo.update_state(state, dt);
+  pose = cugo.get_pose();
+
+  // 期待値計算 (オイラー積分: x += v*cos(yaw)*dt, yaw += w*dt)
+  // yaw_new = 0.157 + (-0.314) = -0.157
+  // x_new = prev_x + 0.5 * cos(-0.157) * 0.1
+  // y_new = prev_y + 0.5 * sin(0.157) * 0.1
+
+  ASSERT_NEAR(pose.x, 0.05 + (0.3 * std::cos(0.157) * 0.1) + (0.5 * std::cos(-0.157) * 0.1), 1e-4);
+  ASSERT_NEAR(pose.y, 0.0 + (0.3 * std::sin(0.157) * 0.1) + (0.5 * std::sin(-0.157) * 0.1), 1e-4);
+  ASSERT_NEAR(pose.yaw, -0.157, 1e-4);
 }
 
-// twistの累積が正しいかどうか
-TEST_F(CuGoTest, test_calc_odom)
+
+// Identity一致確認ロジックのテスト
+TEST_F(CuGoTest, test_match_identity)
 {
-  Odom odom;
-  odom.x = 0.0;
-  odom.y = 0.0;
-  odom.yaw = 0.0;
-  Twist twist;
-  twist.linear_x = 0.0;
-  twist.angular_z = 0.0;
-  float dt = 0.1;
+  RobotState state;
+  state.product_id = 10000;
+  state.robot_id = 1;
+  EXPECT_TRUE(cugo.match_identity(state));
 
-  odom = cugo.calc_odom(odom, twist, dt);
-  ASSERT_NEAR(odom.x, 0.0, 1e-4);
-  ASSERT_NEAR(odom.y, 0.0, 1e-4);
-  ASSERT_NEAR(odom.yaw, 0.0, 1e-4);
+  state.robot_id = 2;
+  EXPECT_FALSE(cugo.match_identity(state));
 
-  twist.linear_x = 0.5;
-  twist.angular_z = 0.0;
-  odom = cugo.calc_odom(odom, twist, dt);
-  ASSERT_NEAR(odom.x, 0.05, 1e-4);
-  ASSERT_NEAR(odom.y, 0.0, 1e-4);
-  ASSERT_NEAR(odom.yaw, 0.0, 1e-4);
-
-  twist.linear_x = 0.3;
-  twist.angular_z = 1.57;
-  odom = cugo.calc_odom(odom, twist, dt);
-  ASSERT_NEAR(odom.x, 0.07963102384, 1e-4);
-  ASSERT_NEAR(odom.y, 0.004690674368, 1e-4);
-  ASSERT_NEAR(odom.yaw, 0.157, 1e-4);
-
-  twist.linear_x = 0.5;
-  twist.angular_z = -3.14;
-  odom = cugo.calc_odom(odom, twist, dt);
-  ASSERT_NEAR(odom.x, 0.1290160636, 1e-4);
-  ASSERT_NEAR(odom.y, -0.003127116246, 1e-4);
-  ASSERT_NEAR(odom.yaw, -0.157, 1e-4);
+  state.product_id = 10001;
+  state.robot_id = 1;
+  EXPECT_FALSE(cugo.match_identity(state));
 }
