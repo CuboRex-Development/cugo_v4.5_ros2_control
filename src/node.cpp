@@ -335,7 +335,7 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
     if (packet_error_info_log_) {
       RCLCPP_INFO_THROTTLE(
           this->get_logger(), *this->get_clock(), 1000,
-          "[packet error] cumulative count: %u", packet_error_count_);
+          "[packet error] cumulative count: %u", packet_error_count_.load());
     }
     if (consecutive_error_count_ >= max_consecutive_errors_) {
       serial_->flush_buffer();
