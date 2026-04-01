@@ -304,7 +304,7 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
         last_cmd_vel_time_ = current_receive_time;  // cmd_velタイムアウトをリセット
         is_first_serial_data_ = false;
 
-        // ハンドシェイク完了を通知するためにPublishする（位置・速度は変化なし）
+        // ハンドシェイク完了を通知するためにPublishする(位置・速度は変化なし)
         should_publish = true;
       }
     }
@@ -355,7 +355,7 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
     }
   }
 
-  // 2. 状態を更新（Mutexで保護）
+  // 2. 状態を更新(Mutexで保護)
   double dt_for_log = 0.0;
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -397,7 +397,7 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
 
   // 3. 計算したオドメトリとTFを発行
   // publish_odom_and_tf内でもロックを取得するため、ここでは一旦ロックを開放してから呼ぶ
-  // （cugo_の状態はupdate_stateで更新済み）
+  // (cugo_の状態はupdate_stateで更新済み)
   if (should_publish) {
     publish_odom_and_tf();
     if (callback_log_) {

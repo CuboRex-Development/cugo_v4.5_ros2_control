@@ -39,13 +39,13 @@ ROS 2 Jazzy Jalisco 以降で動作します。
 <img width="4077" height="2541" alt="cugo_v4 5_ros2_control" src="https://github.com/user-attachments/assets/f1fafdfb-5448-4293-af8a-70d4c094e65e" />
 
 
-本ノードを実行しているROS2 PC とCuGo V4.5 との通信方式は USB-Serial をデフォルトとしていますが、その他の通信方式も選択することができます。
+本ノードを実行しているROS2 PC とCuGo V4.5 との通信方式は USB-Serial 接続 をデフォルトとしていますが、その他の通信方式も選択することができます。
 
 # Connection
 
 ### USB-Serial 接続 (デフォルト)
 
-PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式です。  
+PC と Raspberry Pi Pico 2 W を USB ケーブルで直接接続する方式です。  
 追加機器なしに最も簡単に使用できます。
 
 <img width="4194" height="769" alt="USB" src="https://github.com/user-attachments/assets/1d0d16b3-4b9c-4172-8e61-97643d443131" />
@@ -55,34 +55,35 @@ PC と Raspberry Pi Pico 2 WH を USB ケーブルで直接接続する方式で
 
 CuGo V4.5 本体の BOX コネクタを介して PC とシリアル通信する方式です。  
 USB-UART 変換アダプタなどを使用して PC と接続するほか、UARTポートを持つ機器とUSBなしに接続が可能です。接続ケーブルは、ご自身でご用意ください。
-ROS 側の設定は USB-Serial 接続と同じ `serial` モードのまま使用できます。必要に応じて、シリアルポートのパス（`serial_port`）のみ変更してください。
+ROS 側の設定は USB-Serial 接続と同じ `serial` モードのまま使用できます。必要に応じて、シリアルポートのパス(`serial_port`)のみ変更してください。
 
 <img width="4193" height="769" alt="UART_BOX" src="https://github.com/user-attachments/assets/9764360b-66bd-4714-a145-e1018a2f05e5" />
 
 
 ### Bluetoothモード
 
-Classic Bluetooth の SPP（Serial Port Profile）を介して PC とロボット間を無線接続する方式です。
+Classic Bluetooth の SPP(Serial Port Profile)を介して PC とロボット間を無線接続する方式です。
 WiFi ルータが不要で、ペアリング済みのデバイスと直接接続できます。
-接続には事前にペアリングが必要です。詳細は Usage セクションの「Bluetoothモード」を参照してください。
+接続には事前にペアリングが必要です。詳細は Usage セクションの「Bluetoothモード」を参照してください。  
+なお、Bluetoothモードでは、接続断時の自動再接続が適用されません。
 
 <img width="4194" height="769" alt="BT_SPP" src="https://github.com/user-attachments/assets/2e9734c6-8ad2-427f-8452-cbab96952714" />
 
 
 ### WiFi APモード
 
-Raspberry Pi Pico 2 WH 自身がアクセスポイントとして動作する方式です。  
+Raspberry Pi Pico 2 W 自身がアクセスポイントとして動作し、 TCP 接続する方式です。  
 WiFi ルータを用意せずに無線でロボットを操作できます。
-接続には事前にロボット側の WiFi 設定が必要です。（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）
+接続には事前にロボット側の WiFi 設定が必要です。([cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照)
 
 <img width="4193" height="977" alt="WiFi_AP" src="https://github.com/user-attachments/assets/aa6cbac5-d754-47f9-87b2-44292449d4e2" />
 
 
-### WiFi Stationモード（外部ルータ経由）
+### WiFi Stationモード
 
 外部 WiFi ルータ経由で PC とロボット間を TCP 接続する方式です。  
 通信を行うために、WiFiルータが必要です。WiFiルータは、ご自身でご用意ください。
-接続には事前にロボット側の WiFi 設定が必要です。（[cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照）
+接続には事前にロボット側の WiFi 設定が必要です。([cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照)
 
 <img width="4193" height="1559" alt="WiFI_Station" src="https://github.com/user-attachments/assets/8a3db4d3-c379-4bb2-9c4b-9993e35b1d1e" />
 
@@ -95,9 +96,9 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 ### 依存パッケージ
   - xacro
   - robot_state_publisher
-  - joint_state_publisher_gui（URDF確認・デバッグ用）
-  - socat（WiFiモード〔APモード・Stationモード〕を使用する場合のみ）
-  - rfcomm / bluez-utils（Bluetoothモードを使用する場合のみ）
+  - joint_state_publisher_gui(URDF確認・デバッグ用)
+  - socat(WiFiモード〔APモード・Stationモード〕を使用する場合のみ)
+  - rfcomm / bluez-utils(Bluetoothモードを使用する場合のみ)
 
 # Installation
 
@@ -134,13 +135,13 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 # Usage
 
 > [!IMPORTANT]
-> いずれの通信モードでも、事前にマイコン（Raspberry Pi Pico 2 WH）に [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) のスケッチを書き込んでおく必要があります。事前に、cugo_v4.5_ros2_motorcontrollerのInstallationの手順を実施してください。
+> いずれの通信モードでも、事前にマイコン(Raspberry Pi Pico 2 W)に [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) のスケッチを書き込んでおく必要があります。事前に、cugo_v4.5_ros2_motorcontrollerのInstallationの手順を実施してください。
 
-### USB-Serial 接続（デフォルト）
+### USB-Serial 接続 (デフォルト)
 
-1. CuGo V4.5 の Raspberry Pi Pico 2 WH と PC を USB ケーブルで接続します。
+1. CuGo V4.5 の Raspberry Pi Pico 2 W と PC を USB ケーブルで接続します。
 
-2. シリアルポートへのアクセス権を付与します（環境に合わせてポート名やアクセス権限を変更してください）。
+2. シリアルポートへのアクセス権を付与します(環境に合わせてポート名やアクセス権限を変更してください)。
 
    ```bash
    sudo chmod 777 /dev/ttyACM0
@@ -155,36 +156,36 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 ### BOXコネクタ-Serial接続
 
-1. CuGo V4.5 本体の BOX コネクタと PC を USB-シリアル変換アダプタで接続します。
+1. CuGo V4.5 本体の BOX コネクタと PC を USB-シリアル変換アダプタなどで接続します。
    
    <img width="2248" height="723" alt="ボックスコネクタ" src="https://github.com/user-attachments/assets/8c8e809c-5500-44a4-ad43-a3b5945c6a83" />
 
    **J28 ピンアサイン**
    
-   | ピン番号 | Raspberry Pi Pico 2 WH GP |                      機能 |
-   | :-----: | :----------------------: | :-----------------------: |
-   |       7 |           GP8 (UART1 TX) | TxD (ROS側機器のRxDを接続) |
-   |       8 |           GP9 (UART1 RX) | RxD (ROS側機器のTxDを接続) |
-   |      20 |                      GND |                       GND |
+   | ピン番号 | Raspberry Pi Pico 2 WGP |            機能            |
+   | :------: | :---------------------: | :------------------------: |
+   |    7     |     GP8 (UART1 TX)      | TxD (ROS側機器のRxDを接続) |
+   |    8     |     GP9 (UART1 RX)      | RxD (ROS側機器のTxDを接続) |
+   |    20    |           GND           |            GND             |
    
   > [!TIP]
   > 適合コネクタ例(参考)  
   > ハウジング：日本航空電子工業社製 PS-D4C20  
   > コンタクト：日本航空電子工業社製 030-51307-001 など
 
-2. デバイスが認識されているか確認します。
+2. デバイスが認識されているか確認します。(環境に合わせてポート名やアクセス権限を変更してください)。
 
    ```bash
    ls /dev/ttyUSB*
    ```
 
-3. シリアルポートへのアクセス権を付与します（環境に合わせてポート名やアクセス権限を変更してください）。
+3. シリアルポートへのアクセス権を付与します(環境に合わせてポート名やアクセス権限を変更してください)。
 
    ```bash
    sudo chmod 777 /dev/ttyUSB0
    ```
 
-4. `config/params.yaml` の `serial_port` を接続したポートに変更します（`comm_type: serial` のままで問題ありません）。
+4. `config/params.yaml` の `serial_port` を接続したポートに変更します(`comm_type: serial` のままで問題ありません)。
 
    ```yaml
    cugo_v4_5_ros2_control:
@@ -208,7 +209,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 1. PC の Bluetooth でロボットとペアリングします。
 
-   GUI（Bluetooth 設定）または `bluetoothctl` コマンドでペアリングしてください。
+   GUI(Bluetooth 設定)または `bluetoothctl` コマンドでペアリングしてください。
 
    `bluetoothctl` を使用する場合は以下を実行してください。
 
@@ -235,6 +236,9 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    ```
 > [!NOTE]
 > ペアリング完了後は、デバイスとの接続を実施してもすぐに切断されますが、問題ありません。
+<!--  -->
+> [!NOTE]
+> ペアリング後にロボット側のプログラムを書き換えた際は、一度ペアリングを解除して再度ペアリングしてください。
 
 2. `rfcomm` コマンドがパスワードなしで実行できるよう sudoers を設定します。
 
@@ -242,7 +246,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    sudo gnome-text-editor /etc/sudoers.d/rfcomm-rule
    ```
 
-   以下を記述して保存してください（`your_username` はご自身のユーザー名に置き換えてください）。
+   以下を記述して保存してください(`your_username` はご自身のユーザー名に置き換えてください)。
 
    ```text
    your_username ALL=(ALL) NOPASSWD: /usr/bin/rfcomm bind /dev/rfcomm0 *
@@ -268,7 +272,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 ロボット側の WiFi AP 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
 
-1. PC の WiFi を、ロボット側で設定したアクセスポイント（デフォルト SSID: `CuGo_AP`）に接続します。
+1. PC の WiFi を、ロボット側で設定したアクセスポイント(デフォルト SSID: `CuGo_AP`)に接続します。
 
 2. `config/params.yaml` を編集して `comm_type`、`tcp_host`、`tcp_port` を設定します。
 
@@ -286,7 +290,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
    ```
 
-### WiFi Stationモード（外部ルータ経由）
+### WiFi Stationモード
 
 ロボット側の WiFi Station 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
 
@@ -331,104 +335,110 @@ RViz2 が起動したら、以下の設定を行ってください。
 
 ### 通信設定
 
-| パラメータ        | デフォルト値    | 説明                                                                                                                |
-| ----------------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `comm_type`       | `serial`        | 通信方式: `serial`（USB）/ `wifi`（APモード・Stationモード共通）/ `bluetooth`（Bluetooth SPP）                      |
-| `serial_port`     | `/dev/ttyACM0`  | シリアルポートのパス（USB接続時）                                                                                   |
-| `serial_baudrate` | `115200`        | ボーレート                                                                                                          |
-| `tcp_host`        | `192.168.1.100` | WiFiモード時の接続先IPアドレス（APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済） |
-| `tcp_port`        | `8080`          | WiFiモード時の接続先ポート番号                                                                                      |
-| `bt_address`      | `""`          | Bluetoothモード時の接続先MACアドレス                                                                                |
-| `bt_channel`      | `1`             | Bluetoothモード時の SPP チャンネル番号（通常は `1`）                                                                |
+|    パラメータ     |  デフォルト値   | 説明                                                                                                              |
+| :---------------: | :-------------: | ----------------------------------------------------------------------------------------------------------------- |
+|    `comm_type`    |    `serial`     | 通信方式: `serial`(USB)/ `wifi`(APモード・Stationモード共通)/ `bluetooth`(Bluetooth SPP)                          |
+|   `serial_port`   | `/dev/ttyACM0`  | シリアルポートのパス(USB接続時)                                                                                   |
+| `serial_baudrate` |    `115200`     | ボーレート                                                                                                        |
+|    `tcp_host`     | `192.168.1.100` | WiFiモード時の接続先IPアドレス(APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済) |
+|    `tcp_port`     |     `8080`      | WiFiモード時の接続先ポート番号                                                                                    |
+|   `bt_address`    |      `""`       | Bluetoothモード時の接続先MACアドレス                                                                              |
+|   `bt_channel`    |       `1`       | Bluetoothモード時の SPP チャンネル番号(通常は `1`)                                                                |
 
 ### launch 引数
 
 以下のパラメータは `params.yaml` の編集に加えて、launch 引数でも上書きできます。
 
-| 引数          | デフォルト値    | 説明                                                                                                                |
-| ------------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `comm_type`   | `serial`        | 通信方式: `serial` / `wifi` / `bluetooth`                                                                           |
-| `tcp_host`    | `192.168.1.100` | WiFiモード時の接続先IPアドレス（APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済） |
-| `tcp_port`    | `8080`          | WiFiモード時の接続先ポート番号                                                                                      |
-| `bt_address`  | `""`            | Bluetoothモード時の接続先MACアドレス                                                                                |
-| `bt_channel`  | `1`             | Bluetoothモード時の SPP チャンネル番号                                                                              |
-| `log_level`   | `info`          | ログレベル: `debug`, `info`, `warn`, `error`, `fatal`                                                               |
+|     引数     |  デフォルト値   | 説明                                                                                                              |
+| :----------: | :-------------: | ----------------------------------------------------------------------------------------------------------------- |
+| `comm_type`  |    `serial`     | 通信方式: `serial` / `wifi` / `bluetooth`                                                                         |
+|  `tcp_host`  | `192.168.1.100` | WiFiモード時の接続先IPアドレス(APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済) |
+|  `tcp_port`  |     `8080`      | WiFiモード時の接続先ポート番号                                                                                    |
+| `bt_address` |      `""`       | Bluetoothモード時の接続先MACアドレス                                                                              |
+| `bt_channel` |       `1`       | Bluetoothモード時の SPP チャンネル番号                                                                            |
+| `log_level`  |     `info`      | ログレベル: `debug`, `info`, `warn`, `error`, `fatal`                                                             |
 
 ### 制御設定
 
-| パラメータ               | デフォルト値 | 説明                                                                                                                                                                                                                                                                                                                    |
-| ------------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `control_frequency`      | `10.0`       | 制御周期 [Hz]（通常 10Hz、最大 20Hz 程度（無線接続時）、最大 50Hz（優先接続時））                                                                                                                                                                                                                                                                                            |
-| `cmd_vel_timeout`        | `0.5`        | 他ノードからの`/cmd_vel` 受信タイムアウト [秒]（超過で速度ゼロ）                                                                                                                                                                                                                                                        |
-| `serial_timeout`         | `0.5`        | マイコンからの受信タイムアウト [秒]（超過で再接続）。WiFi接続（APモード・Stationモード）では通信レイテンシが有線より高いため、`1.0`〜`2.0` を推奨                                                                                                                                                                       |
-| `max_consecutive_errors` | `5`          | 連続デコードエラーの許容回数。この回数を超えると受信バッファをフラッシュしてフレーミングを再同期します。通信品質が低い環境では大きくし、即座に再同期したい場合は小さくしてください                                                                                                                                      |
-| `response_lost_timeout`  | `0.0`        | 応答ロスト判定時間 [秒]（`0.0` で無効）。ロボットへのリクエスト送信後、この時間内に応答がなければ再度リクエストを送信します。**値により制御周期が大きく低下する可能性があります。** 通信遅延への対策としてのみ使用してください。詳細は [Note > 通信遅延対策について](#通信遅延対策について) を参照 |
+|        パラメータ        | デフォルト値 | 説明                                                                                                                                                                                                                                                                                             |
+| :----------------------: | :----------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|   `control_frequency`    |    `10.0`    | 制御周期 [Hz](通常 10Hz、最大 20Hz 程度(無線接続時)、最大 50Hz 程度(有線接続時))                                                                                                                                                                                                                 |
+|    `cmd_vel_timeout`     |    `0.5`     | 他ノードからの`/cmd_vel` 受信タイムアウト [秒](超過で速度ゼロ)                                                                                                                                                                                                                                   |
+|     `serial_timeout`     |    `0.5`     | マイコンからの受信タイムアウト [秒](超過で再接続)。WiFi接続(APモード・Stationモード)では通信レイテンシが有線より高いため、`1.0`〜`2.0` を推奨                                                                                                                                                    |
+| `max_consecutive_errors` |     `5`      | 連続デコードエラーの許容回数。この回数を超えると受信バッファをフラッシュしてフレーミングを再同期します。通信品質が低い環境では大きくし、即座に再同期したい場合は小さくしてください                                                                                                               |
+| `response_lost_timeout`  |    `0.0`     | 応答ロスト判定時間 [秒](`0.0` で無効)。ロボットへのリクエスト送信後、この時間内に応答がなければ再度リクエストを送信します。**値により制御周期が大きく低下する可能性があります。** 通信遅延への対策としてのみ使用してください。詳細は [Note > 通信遅延対策について](#通信遅延対策について) を参照 |
 
 > [!CAUTION]
 > `response_lost_timeout` は通信遅延の対策としてのみ使用してください。0.0以外の値を設定すると制御周期が低下する可能性があります。設定前に必ず [Note > 通信遅延対策について](#通信遅延対策について) を熟読し、適切な値を設定してください。
+<!--  -->
+
+> [!TIP]
+> `control_frequency` を大きい値にする場合、`serial_baudrate`を上げる必要があります。デフォルトの `serial_baudrate` = `115200` では、30Hz程度が上限となります。
+
+
 
 ### オドメトリ積分設定
 
 速度の積分によるオドメトリ計算に使用する手法を選択できます。
 
-| パラメータ                              | デフォルト値               | 説明                                                                                                                    |
-| --------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `odometry_method`                       | `midpoint`                 | 積分手法: `midpoint`（修正オイラー法）/ `analytic`（解析解）                                                            |
-| `odometry_analytic_angular_z_threshold` | `0.003142`（π/1000 rad/s） | `analytic` 選択時に「旋回なし」とみなすしきい値 [rad/s]。この値未満の場合は `midpoint` にフォールバック（ゼロ除算回避） |
+|               パラメータ                |       デフォルト値       | 説明                                                                                                                  |
+| :-------------------------------------: | :----------------------: | --------------------------------------------------------------------------------------------------------------------- |
+|            `odometry_method`            |        `midpoint`        | 積分手法: `midpoint`(修正オイラー法)/ `analytic`(解析解)                                                              |
+| `odometry_analytic_angular_z_threshold` | `0.003142`(π/1000 rad/s) | `analytic` 選択時に「旋回なし」とみなすしきい値 [rad/s]。この値未満の場合は `midpoint` にフォールバック(ゼロ除算回避) |
 
 
 ### ROS フレーム・トピック設定
 
-| パラメータ             | デフォルト値 | 説明                                                                          |
-| ---------------------- | ------------ | ----------------------------------------------------------------------------- |
-| `odom_frame_id`        | `odom`       | オドメトリフレーム名                                                          |
-| `base_link_frame_id`   | `base_link`  | ベースリンクフレーム名(params.yaml では `base_footprint`に設定されています。) |
-| `subscribe_topic_name` | `/cmd_vel`   | 速度指令トピック名                                                            |
-| `publish_topic_name`   | `/odom`      | オドメトリトピック名                                                          |
+|       パラメータ       | デフォルト値 | 説明                                                                          |
+| :--------------------: | :----------: | ----------------------------------------------------------------------------- |
+|    `odom_frame_id`     |    `odom`    | オドメトリフレーム名                                                          |
+|  `base_link_frame_id`  | `base_link`  | ベースリンクフレーム名(params.yaml では `base_footprint`に設定されています。) |
+| `subscribe_topic_name` |  `/cmd_vel`  | 速度指令トピック名                                                            |
+|  `publish_topic_name`  |   `/odom`    | オドメトリトピック名                                                          |
 
 ### デバイスID
 
-| パラメータ   | デフォルト値 | 説明                                               |
-| ------------ | ------------ | -------------------------------------------------- |
-| `product_id` | `10000`      | CuGo V4.5 のプロダクトID（変更不要）               |
-| `robot_id`   | `0`          | ロボット識別子（複数台運用時に設定することを想定） |
+|  パラメータ  | デフォルト値 | 説明                                             |
+| :----------: | :----------: | ------------------------------------------------ |
+| `product_id` |   `10000`    | CuGo V4.5 のプロダクトID(変更不要)               |
+|  `robot_id`  |     `0`      | ロボット識別子(複数台運用時に設定することを想定) |
 
-### 共分散（SLAM・ナビゲーション調整用）
+### 共分散(SLAM・ナビゲーション調整用)
 
-| パラメータ            | デフォルト値 | 説明                                          |
-| --------------------- | ------------ | --------------------------------------------- |
-| `pose_cov_x`          | `0.04`       | 位置 X 精度（0.2 m 相当）                     |
-| `pose_cov_y`          | `0.04`       | 位置 Y 精度（0.2 m 相当）                     |
-| `pose_cov_z`          | `1.0e9`      | 位置 Z（2次元平面のみのため大きな値に設定）   |
-| `pose_cov_roll`       | `1.0e9`      | Roll（2次元平面のみのため大きな値に設定）     |
-| `pose_cov_pitch`      | `1.0e9`      | Pitch（2次元平面のみのため大きな値に設定）    |
-| `pose_cov_yaw`        | `0.01`       | Yaw 精度（0.1 rad 相当）                      |
-| `twist_cov_linear_x`  | `0.0025`     | 線速度 X 精度（0.05 m/s 相当）                |
-| `twist_cov_linear_y`  | `0.0025`     | 線速度 Y 精度（0.05 m/s 相当）                |
-| `twist_cov_angular_z` | `1.0e9`      | 角速度 Z（2次元平面のみのため大きな値に設定） |
+|      パラメータ       | デフォルト値 | 説明                                        |
+| :-------------------: | :----------: | ------------------------------------------- |
+|     `pose_cov_x`      |    `0.04`    | 位置 X 精度(0.2 m 相当)                     |
+|     `pose_cov_y`      |    `0.04`    | 位置 Y 精度(0.2 m 相当)                     |
+|     `pose_cov_z`      |   `1.0e9`    | 位置 Z(2次元平面のみのため大きな値に設定)   |
+|    `pose_cov_roll`    |   `1.0e9`    | Roll(2次元平面のみのため大きな値に設定)     |
+|   `pose_cov_pitch`    |   `1.0e9`    | Pitch(2次元平面のみのため大きな値に設定)    |
+|    `pose_cov_yaw`     |    `0.01`    | Yaw 精度(0.1 rad 相当)                      |
+| `twist_cov_linear_x`  |   `0.0025`   | 線速度 X 精度(0.05 m/s 相当)                |
+| `twist_cov_linear_y`  |   `0.0025`   | 線速度 Y 精度(0.05 m/s 相当)                |
+| `twist_cov_angular_z` |   `1.0e9`    | 角速度 Z(2次元平面のみのため大きな値に設定) |
 
 ### ログ設定
 
 すべてのログフラグは `false` がデフォルトです。`true` に設定すると、ノード起動時から ログが出力されます。(`cugo_v4_5_launch.py` で読み取る `params.yaml` では一部のログが有効化されています。)
 
-| パラメータ               | デフォルト値 | 説明                                        |
-| ------------------------ | ------------ | ------------------------------------------- |
-| `param_info_log`         | `false`      | 起動時の設定パラメータ一覧                  |
-| `odom_pos_info_log`      | `false`      | Odometry 位置成分（x, y, yaw）              |
-| `odom_vel_info_log`      | `false`      | Odometry 速度成分（Vx, Vy, Omega）          |
-| `recv_interval_info_log` | `false`      | データ受信間隔（ms）                        |
-| `packet_error_info_log`  | `false`      | パケットデコードエラー統計（累積件数）      |
-| `connection_info_log`    | `false`      | 接続状態変化ログ（接続・再接続）            |
-| `connection_lost_log`    | `false`      | シリアル通信未達 WARN（再接続待機中に出力） |
-| `received_speed_log`     | `false`      | マイコンから受信した速度（Vx, Vy, Omega）   |
-| `cmd_vel_log`            | `false`      | `/cmd_vel` で受信した速度指令値             |
-| `tx_cmd_log`             | `false`      | マイコンへ実際に送信した速度指令値          |
-| `loop_interval_log`      | `false`      | 制御ループの実行間隔（ms）                  |
-| `handshake_log`          | `false`      | ハンドシェイク状態遷移の詳細                |
-| `serial_log`             | `false`      | 送受信パケット内容（COBSデコード後）        |
-| `serial_raw_log`         | `false`      | 送受信パケット内容（生データ）              |
-| `callback_log`           | `false`      | コールバック・制御ループの実行フロー        |
-| `rtt_log`                | `false`      | リクエスト〜レスポンス往復時間（ms）        |
+|        パラメータ        | デフォルト値 | 説明                                      |
+| :----------------------: | :----------: | ----------------------------------------- |
+|     `param_info_log`     |   `false`    | 起動時の設定パラメータ一覧                |
+|   `odom_pos_info_log`    |   `false`    | Odometry 位置成分(x, y, yaw)              |
+|   `odom_vel_info_log`    |   `false`    | Odometry 速度成分(Vx, Vy, Omega)          |
+| `recv_interval_info_log` |   `false`    | データ受信間隔(ms)                        |
+| `packet_error_info_log`  |   `false`    | パケットデコードエラー統計(累積件数)      |
+|  `connection_info_log`   |   `false`    | 接続状態変化ログ(接続・再接続)            |
+|  `connection_lost_log`   |   `false`    | シリアル通信未達 WARN(再接続待機中に出力) |
+|   `received_speed_log`   |   `false`    | マイコンから受信した速度(Vx, Vy, Omega)   |
+|      `cmd_vel_log`       |   `false`    | `/cmd_vel` で受信した速度指令値           |
+|       `tx_cmd_log`       |   `false`    | マイコンへ実際に送信した速度指令値        |
+|   `loop_interval_log`    |   `false`    | 制御ループの実行間隔(ms)                  |
+|     `handshake_log`      |   `false`    | ハンドシェイク状態遷移の詳細              |
+|       `serial_log`       |   `false`    | 送受信パケット内容(COBSデコード後)        |
+|     `serial_raw_log`     |   `false`    | 送受信パケット内容(生データ)              |
+|      `callback_log`      |   `false`    | コールバック・制御ループの実行フロー      |
+|        `rtt_log`         |   `false`    | リクエスト〜レスポンス往復時間(ms)        |
 
 
 # Topics
@@ -436,18 +446,18 @@ RViz2 が起動したら、以下の設定を行ってください。
 ### Published Topics
 
 - `/odom` ([nav_msgs/msg/Odometry](https://docs.ros2.org/foxy/api/nav_msgs/msg/Odometry.html))  
-  ロボットの位置・姿勢・速度情報（オドメトリ）を配信します。マイコンから受け取った車輪速度をもとに計算されます。
+  ロボットの位置・姿勢・速度情報(オドメトリ)を配信します。マイコンから受け取った車輪速度をもとに計算されます。
 
 - `/tf` ([tf2_msgs/msg/TFMessage](https://docs.ros2.org/foxy/api/tf2_msgs/msg/TFMessage.html))  
   `odom` フレームから `base_footprint` フレームへの座標変換を配信します。
 
 - `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/foxy/api/std_msgs/msg/Bool.html))  
-  マイコンとのハンドシェイク（接続確立）状態を配信します。接続中は `true`、未接続または切断時は `false` になります。
+  マイコンとのハンドシェイク(接続確立)状態を配信します。接続中は `true`、未接続または切断時は `false` になります。
 
 ### Subscribed Topics
 
 - `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/foxy/api/geometry_msgs/msg/Twist.html))  
-  ロボットへの速度指令を受信します。`linear.x`（前後）と `angular.z`（旋回）を使用します。
+  ロボットへの速度指令を受信します。`linear.x`(前後)と `angular.z`(旋回)を使用します。
 
 # TF
 
@@ -460,7 +470,7 @@ cugo_v4.5_ros2_control
     ├── my_cugo_robot.urdf.xacro   ← 部品 xacro を読み込むトップレベルファイル
     └── parts
         ├── cugo_v4_5_base.urdf.xacro   ← CuGo 本体の位置関係
-        └── mid360.urdf.xacro          ← センサ搭載サンプル（デフォルトで無効）
+        └── mid360.urdf.xacro          ← センサ搭載サンプル(デフォルトで無効)
 ```
 
 部品を追加する場合は `my_cugo_robot.urdf.xacro` に追記し、`colcon build` を再実行してください。
@@ -479,7 +489,7 @@ cugo_v4.5_ros2_control
 ### 概要
 
 `response_lost_timeout` は、ロボットへ送信したリクエストへの応答が得られない場合のレスポンス待機時間です。
-通常運用では `0`（無効）のままお使いください。WiFi 接続などで通信遅延が問題になる場合にのみ設定してください。
+通常運用では `0`(無効)のままお使いください。WiFi 接続などで通信遅延が問題になる場合にのみ設定してください。
 
 ### 仕組み
 
@@ -494,8 +504,8 @@ cugo_v4.5_ros2_control
 
 実際の処理の流れ：
 
-1. コントロールループで目標速度コマンドを送信（リクエスト）
-2. 有効なパケットを 1 件受信（レスポンス）したら、次のリクエスト送信を許可
+1. コントロールループで目標速度コマンドを送信(リクエスト)
+2. 有効なパケットを 1 件受信(レスポンス)したら、次のリクエスト送信を許可
 3. `response_lost_timeout` 秒を超えても応答がない場合、「レスポンスロスト」と判定し次のリクエスト送信を許可
 
 ### 実効制御周波数への影響
@@ -512,28 +522,28 @@ cugo_v4.5_ros2_control
 
 ### 設定値の下限
 
-`response_lost_timeout` は `1 / control_frequency`（制御周期）より大きい値を設定してください。
+`response_lost_timeout` は `1 / control_frequency`(制御周期)より大きい値を設定してください。
 それ以下の値では、制御ループのたびにタイムアウトが発生し、機能が実質無効と同じになります。
 
-> 例: `control_frequency = 50.0`（20 ms 周期）の場合、`response_lost_timeout > 0.02` を推奨
+> 例: `control_frequency = 50.0`(20 ms 周期)の場合、`response_lost_timeout > 0.02` を推奨
 
 ### 応答遅延パケットの処理
 
 「レスポンスロスト」判定後に次のリクエストを送信した直後、前のリクエストへの遅延応答が届く場合があります。
-この場合、遅延応答は有効なパケットとして処理されますが、前回受信からの経過時間（`dt`）が長くなるため、オドメトリの誤差が一時的に増大する可能性があります。
+この場合、遅延応答は有効なパケットとして処理されますが、前回受信からの経過時間(`dt`)が長くなるため、オドメトリの誤差が一時的に増大する可能性があります。
 
 ### 推奨値
 
-| 接続方式                        | 推奨値       |
-| ------------------------------- | ------------ |
-| USB-Serial（有線）              | `0.0`        |
-| WiFi（APモード・Stationモード） | `0.5`〜`1.0` |
-| Bluetooth SPP                   | `0.5`〜`1.0` |
+|                接続方式                |    推奨値     |
+| :------------------------------------: | :-----------: |
+| USB-Serial接続, BOXコネクタ-Serial接続 |     `0.0`     |
+|     WiFi(APモード・Stationモード)      | `0.2`〜`0.5`  |
+|            Bluetooth モード            | `0.2`〜 `0.5` |
 
 ### 制約事項
 
 `response_lost_timeout` は `serial_timeout` 未満の値を設定してください。
-`serial_timeout` 以上の値を設定した場合、起動時に自動的に `0`（無効）に補正され、WARNログが出力されます。
+`serial_timeout` 以上の値を設定した場合、起動時に自動的に `0`(無効)に補正され、WARNログが出力されます。
 
 </div>
 </details>
@@ -546,9 +556,9 @@ cugo_v4.5_ros2_control
 ### WiFi パワーセーブモードの無効化
 
 Linux の WiFi アダプタがパワーセーブモードで動作している場合、受信データが遅延することがあります。
-WiFi 接続時に応答が周期的にロストする（`[response lost]` ログが頻繁に出る）場合は、パワーセーブを無効化することで改善する場合があります。
+WiFi 接続時に応答が周期的にロストする(`[response lost]` ログが頻繁に出る)場合は、パワーセーブを無効化することで改善する場合があります。
 
-#### 一時的な無効化（再起動で元に戻る）
+#### 一時的な無効化(再起動で元に戻る)
 
 ```bash
 sudo iw wlan0 set power_save off
@@ -560,7 +570,7 @@ sudo iw wlan0 set power_save off
 iwconfig wlan0
 ```
 
-#### 恒久的な無効化（再起動後も有効）
+#### 恒久的な無効化(再起動後も有効)
 
 NetworkManager を使用している場合は、設定ファイルを追加することで永続化できます。
 
@@ -581,9 +591,9 @@ wifi.powersave = 2
 sudo systemctl restart NetworkManager
 ```
 
-### AP モードと Station モードの通信安定性の比較
+### APモードと Stationモードの通信安定性の比較
 
-WiFi 接続は、APモードよりStation モードの方が通信が安定する傾向があります。
+WiFi 接続は、APモードよりStationモードの方が通信が安定する傾向があります。
 APモードでの通信遅延が顕著な場合、Stationモードでの運用も検討してください。
 なお、どちらのモードでも、Linux 側の WiFi パワーセーブを無効化することを推奨します。
 

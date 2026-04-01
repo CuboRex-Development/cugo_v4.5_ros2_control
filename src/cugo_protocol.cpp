@@ -254,7 +254,7 @@ bool CugoProtocol::deserialize_handshake(
       sizeof(uint16_t));
   std::memcpy(&out_data.robot_id, decoded_data.data() + HEADER_OFFSET_ROBOT_ID, sizeof(uint16_t));
 
-    // 速度情報は0埋めしておく（不定値を防ぐため）
+    // 速度情報は0埋めしておく(不定値を防ぐため)
   out_data.linear_x = 0.0;
   out_data.linear_y = 0.0;
   out_data.angular_z = 0.0;

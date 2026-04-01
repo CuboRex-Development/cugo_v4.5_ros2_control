@@ -131,13 +131,13 @@ public:
 
     /**
      * @brief COBSエンコード
-     * @return エンコードされたデータ（失敗時は空vector）
+     * @return エンコードされたデータ(失敗時は空vector)
      */
   static std::vector<uint8_t> encode_cobs(const std::vector<uint8_t> & raw);
 
     /**
      * @brief COBSデコード
-     * @return デコードされたデータ（失敗時は空vector）
+     * @return デコードされたデータ(失敗時は空vector)
      */
   static std::vector<uint8_t> decode_cobs(const std::vector<uint8_t> & encoded);
 

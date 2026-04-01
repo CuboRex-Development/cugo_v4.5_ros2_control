@@ -156,7 +156,7 @@ TEST_F(CugoProtocolTest, test_serialize_command)
   ASSERT_GT(packet.size(), DEFAULT_PACKET_SIZE);
   ASSERT_EQ(packet.back(), 0x00); // デリミタ確認
 
-  // 中身の検証（デシリアライズして戻るか）
+  // 中身の検証(デシリアライズして戻るか)
   RobotState result;
   std::string err;
   // デシリアライズは expected ID との一致を見るのでセットしておく

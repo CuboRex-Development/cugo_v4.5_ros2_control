@@ -11,13 +11,13 @@ import xacro
 # WiFiモード時に生成する仮想シリアルポートのパス
 VSERIAL_PATH = '/tmp/cugo_vserial'
 
-# WiFiモード時にノード起動を遅延させる秒数（socatがPTYを生成するまでの待機）
+# WiFiモード時にノード起動を遅延させる秒数(socatがPTYを生成するまでの待機)
 WIFI_NODE_DELAY_SEC = 2.0
 
 # Bluetoothモード時のRFCOMMデバイスパス
 BT_RFCOMM_PATH = '/dev/rfcomm0'
 
-# Bluetoothモード時にノード起動を遅延させる秒数（rfcomm bindが完了するまでの待機）
+# Bluetoothモード時にノード起動を遅延させる秒数(rfcomm bindが完了するまでの待機)
 BT_NODE_DELAY_SEC = 2.0
 
 
@@ -48,7 +48,7 @@ def generate_launch_description():
     comm_type_arg = DeclareLaunchArgument(
         'comm_type',
         default_value=launch_defaults.get('comm_type', 'serial'),
-        description='通信方式: "serial"（デフォルト）/ "wifi" / "bluetooth"'
+        description='通信方式: "serial"(デフォルト)/ "wifi" / "bluetooth"'
     )
 
     tcp_host_arg = DeclareLaunchArgument(

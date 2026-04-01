@@ -50,7 +50,7 @@ void CuGo::set_odometry_config(OdometryMethod method, double angular_z_threshold
 // ハンドシェイクパケット作成 (RobotStateを使用)
 std::vector<uint8_t> CuGo::create_handshake_packet()
 {
-  // 送信用にRobotStateを作成（IDのみセット、速度は0）
+  // 送信用にRobotStateを作成(IDのみセット、速度は0)
   RobotState data;
   data.product_id = product_id_;
   data.robot_id = robot_id_;
