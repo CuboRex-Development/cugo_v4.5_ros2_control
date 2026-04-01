@@ -162,11 +162,11 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
    **J28 ピンアサイン**
    
-   | ピン番号 | Raspberry Pi Pico 2 WGP |            機能            |
-   | :------: | :---------------------: | :------------------------: |
-   |    7     |     GP8 (UART1 TX)      | TxD (ROS側機器のRxDを接続) |
-   |    8     |     GP9 (UART1 RX)      | RxD (ROS側機器のTxDを接続) |
-   |    20    |           GND           |            GND             |
+   | ピン番号 | Raspberry Pi Pico 2 W GP |            機能            |
+   | :------: | :----------------------: | :------------------------: |
+   |    7     |      GP8 (UART1 TX)      | TxD (ROS側機器のRxDを接続) |
+   |    8     |      GP9 (UART1 RX)      | RxD (ROS側機器のTxDを接続) |
+   |    20    |           GND            |            GND             |
    
   > [!TIP]
   > 適合コネクタ例(参考)  
@@ -445,18 +445,18 @@ RViz2 が起動したら、以下の設定を行ってください。
 
 ### Published Topics
 
-- `/odom` ([nav_msgs/msg/Odometry](https://docs.ros2.org/foxy/api/nav_msgs/msg/Odometry.html))  
+- `/odom` ([nav_msgs/msg/Odometry](https://docs.ros2.org/latest/api/nav_msgs/msg/Odometry.html))  
   ロボットの位置・姿勢・速度情報(オドメトリ)を配信します。マイコンから受け取った車輪速度をもとに計算されます。
 
-- `/tf` ([tf2_msgs/msg/TFMessage](https://docs.ros2.org/foxy/api/tf2_msgs/msg/TFMessage.html))  
+- `/tf` ([tf2_msgs/msg/TFMessage](https://docs.ros2.org/latest/api/tf2_msgs/msg/TFMessage.html))  
   `odom` フレームから `base_footprint` フレームへの座標変換を配信します。
 
-- `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/foxy/api/std_msgs/msg/Bool.html))  
+- `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/latest/api/std_msgs/msg/Bool.html))  
   マイコンとのハンドシェイク(接続確立)状態を配信します。接続中は `true`、未接続または切断時は `false` になります。
 
 ### Subscribed Topics
 
-- `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/foxy/api/geometry_msgs/msg/Twist.html))  
+- `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/latest/api/geometry_msgs/msg/Twist.html))  
   ロボットへの速度指令を受信します。`linear.x`(前後)と `angular.z`(旋回)を使用します。
 
 # TF
@@ -597,6 +597,7 @@ WiFi 接続は、APモードよりStationモードの方が通信が安定する
 APモードでの通信遅延が顕著な場合、Stationモードでの運用も検討してください。
 なお、どちらのモードでも、Linux 側の WiFi パワーセーブを無効化することを推奨します。
 
+</div>
 </details>
 
 # License

@@ -111,14 +111,14 @@ public:
     // --- ハンドシェイク用 (RobotStateを流用) ---
     /**
      * @brief ハンドシェイク用パケット生成
-     * RobotState内の PID, RID のみを使用し、独自形式(6byte)でシリアライズする
+     * RobotState内の PID, RID のみを使用し、独自形式でシリアライズする
      */
   static std::vector<uint8_t> serialize_handshake(
     const RobotState & expected_state);
 
     /**
      * @brief ハンドシェイク用パケット解析
-     * 受信した独自形式(6byte)を RobotState の PID, RID に復元する。速度は0とする。
+     * 受信した独自形式を RobotState の PID, RID に復元する。速度は0とする。
      */
   static bool deserialize_handshake(
     const std::vector<uint8_t> & packet,

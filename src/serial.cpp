@@ -47,7 +47,7 @@ void Serial::open(const std::string & port, int baudrate)
 {
   std::cout << "[Serial INFO] open()" << std::endl;
   if (serial_port_.is_open()) {
-    std::cerr << "[Serial WARN] Serial port " << port << " alrady open." << std::endl;
+    std::cerr << "[Serial WARN] Serial port " << port << " already open." << std::endl;
     return;
   }
 
@@ -79,6 +79,10 @@ void Serial::open(const std::string & port, int baudrate)
     }
     start_read();  // ポートが開いたら読み取りを開始
   } catch (const boost::system::system_error & e) {
+    if (serial_port_.is_open()) {
+      boost::system::error_code ec;
+      serial_port_.close(ec);
+    }
     std::cerr << "[Serial ERROR] Error opening serial port " << port << ": " << e.what()
               << std::endl;
     std::cout

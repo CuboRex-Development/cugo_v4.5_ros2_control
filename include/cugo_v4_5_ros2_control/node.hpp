@@ -23,6 +23,7 @@
 #include <std_msgs/msg/bool.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
+#include <atomic>
 #include <mutex>
 #include <vector>
 
@@ -81,7 +82,7 @@ private:
   std::shared_ptr<cugo_v4_5_ros2_control::Serial> serial_;
 
   // データ共有
-  ConnectionState connection_state_{ConnectionState::CONNECTED};
+  std::atomic<ConnectionState> connection_state_{ConnectionState::CONNECTED};
   rclcpp::Time last_reconnect_attempt_time_;
   std::mutex data_mutex_;
   geometry_msgs::msg::Twist latest_cmd_vel_;
@@ -109,7 +110,7 @@ private:
   // ハンドシェイクバッファ
   HandshakeState handshake_state_{HandshakeState::INIT};
   rclcpp::Time handshake_last_action_time_;
-  bool is_handshake_done_{false};
+  std::atomic<bool> is_handshake_done_{false};
   double handshake_timeout_{1.0};
   double handshake_retry_interval_{2.0};
 
@@ -134,8 +135,8 @@ private:
   bool rtt_log_{false};             // リクエスト〜レスポンス往復時間 (ms)
 
   // ログ統計
-  uint32_t packet_error_count_{0};
-  uint32_t consecutive_error_count_{0};
+  std::atomic<uint32_t> packet_error_count_{0};
+  std::atomic<uint32_t> consecutive_error_count_{0};
 
   // 通信堅牢性設定
   uint32_t max_consecutive_errors_{5};

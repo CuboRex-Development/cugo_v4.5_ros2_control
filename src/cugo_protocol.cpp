@@ -270,7 +270,7 @@ uint16_t CugoProtocol::calc_checksum(const uint8_t *data, size_t size)
   }
 
   uint32_t sum = 0;
-  for (size_t i = 0; i < size; i += 2) {
+  for (size_t i = 0; i + 1 < size; i += 2) {
     uint16_t word = (static_cast<uint16_t>(data[i + 1]) << 8) | static_cast<uint16_t>(data[i]);
     sum += word;
   }
