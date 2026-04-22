@@ -1,0 +1,111 @@
+# CuGo V4.5 ROS 2 コントロールノード パラメータ設定
+#
+# ユーザが変更する可能性が高い設定をこのファイルにまとめています。
+# 通常の使用では「通信設定」と「制御設定」のみ確認・変更してください。
+# SLAMやナビゲーションと組み合わせる場合は「共分散」も調整してください。
+#
+# 設定値を変更した場合は colcon build を再実行してください。
+
+cugo_v4_5_ros2_control:
+  ros__parameters:
+
+    # =============================================
+    # 通信設定 (接続するロボットに合わせて変更)
+    # =============================================
+
+    # 通信方式: "serial" (シリアル接続) / "wifi" (WiFi接続) / "bluetooth" (Bluetooth SPP接続)
+    comm_type: serial
+    # comm_type: wifi
+    # comm_type: bluetooth
+
+    # シリアルポート (接続方式に合わせて変更してください)
+    serial_port    : /dev/ttyACM0
+    # serial_port    : /dev/ttyUSB0
+    serial_baudrate: 115200
+
+    # WiFi 接続先 (comm_type: wifi のときのみ使用、ご自身の環境に合わせて設定してください。)
+    tcp_host: 192.168.42.1
+    tcp_port: 8080
+
+    # Bluetooth 接続先 (comm_type: bluetooth のときのみ使用)
+    # 事前に bluetoothctl でペアリングを完了させてください。
+    # 詳細は README の Usage > Bluetoothモード を参照してください。
+    bt_address: "XX:XX:XX:XX:XX:XX"  # ← ロボットに搭載されたRaspberry Pi Pico 2 Wの MAC アドレスに変更してください
+    bt_channel: 1
+
+    # =============================================
+    # 制御設定
+    # =============================================
+
+    control_frequency     : 10.0 # 制御周期 [Hz] (通常 10Hz、最大 20Hz 程度(無線接続時)、最大 50Hz(有線接続時))
+    cmd_vel_timeout       :  0.5 # /cmd_vel 受信タイムアウト [秒] (超過で速度ゼロ)
+    serial_timeout        :  0.5 # マイコン通信タイムアウト [秒] (WiFi接続時は 1.0〜2.0 を推奨)
+    max_consecutive_errors:  5   # 連続デコードエラー許容回数 (超過でバッファフラッシュ・再同期)
+    response_lost_timeout :  0.0 # 応答ロスト判定時間 [秒] (0で無効。README Noteをよく確認の上、値を変更してください。)
+
+    # オドメトリ積分方式: "midpoint" (修正オイラー法) / "analytic" (解析解)
+    # midpoint : ヨー角の中間点を使って変位を計算する修正オイラー法。誤差 O(dt²)。通常はこちらを推奨。
+    # analytic : dt 内で速度が一定と仮定した弧積分の厳密解。旋回動作が多い用途や高精度要求時に有効。
+    #            angular_z が odometry_analytic_angular_z_threshold 未満のときは midpoint にフォールバック。
+    odometry_method: midpoint
+    # odometry_method: analytic
+
+    # 解析法において angular_z が「小さい」とみなすしきい値 [rad/s]
+    # この値未満のとき、解析解の代わりに修正オイラー法を使用する (ゼロ除算回避)
+    # デフォルト: π/1000 ≒ 0.003142 rad/s
+    odometry_analytic_angular_z_threshold: 0.003141592653589793
+
+    # =============================================
+    # ROS フレーム・トピック設定
+    # =============================================
+
+    odom_frame_id       : odom
+    base_link_frame_id  : base_footprint
+    subscribe_topic_name: /cmd_vel
+    publish_topic_name  : /odom
+
+    # =============================================
+    # デバイスID (通常は変更不要)
+    # =============================================
+
+    product_id: 10000   # CuGo V4.5 製品識別子 (変更不要)
+    robot_id  : 0       # ロボット識別子 (複数台運用時に設定)
+
+    # =============================================
+    # 共分散 (SLAM・ナビゲーション調整用)
+    # =============================================
+    # 値が大きいほどオドメトリへの信頼度が低くなります。
+    # 2次元平面のみの運動であるため Z / Roll / Pitch は大きな値に設定しています。
+
+    pose_cov_x         : 0.04    # 位置 X 精度 (0.2 m 相当)
+    pose_cov_y         : 0.04    # 位置 Y 精度 (0.2 m 相当)
+    pose_cov_z         : 1.0e9
+    pose_cov_roll      : 1.0e9
+    pose_cov_pitch     : 1.0e9
+    pose_cov_yaw       : 0.01    # Yaw 精度 (0.1 rad 相当)
+
+    twist_cov_linear_x : 0.0025  # 速度 X 精度 (0.05 m/s 相当)
+    twist_cov_linear_y : 0.0025  # 速度 Y 精度 (0.05 m/s 相当)
+    twist_cov_angular_z: 1.0e9
+
+    # =============================================
+    # ログ設定 (INFOレベル) - 通常は全て false
+    # =============================================
+    # true に設定するとノード起動時から出力されます。
+
+    param_info_log         : true  # 起動時の設定パラメータ一覧
+    odom_pos_info_log      : false # Odometry 位置成分 (x, y, yaw)
+    odom_vel_info_log      : false # Odometry 速度成分 (Vx, Vy, Omega)
+    recv_interval_info_log : false # データ受信間隔 (ms)
+    packet_error_info_log  : true  # パケットデコードエラー統計
+    connection_info_log    : true  # 接続状態変化ログ
+    connection_lost_log    : true  # シリアル通信未達 WARN (再接続待機中に毎ループ出力)
+    received_speed_log     : false # 受信速度 (Vx, Vy, Omega)
+    cmd_vel_log            : false # /cmd_vel で受信した速度指令値
+    tx_cmd_log             : false # 実際に送信した速度指令値
+    loop_interval_log      : false # 制御ループの実行間隔 (ms)
+    handshake_log          : false # ハンドシェイク状態遷移の詳細
+    serial_log             : false # 送受信パケット内容 (COBS エンコード前/デコード後)
+    serial_raw_log         : false # 送受信パケット内容 (生データ)
+    callback_log           : false # コールバック・制御ループの実行フロー
+    rtt_log                : false # リクエスト〜レスポンス往復時間 (ms)

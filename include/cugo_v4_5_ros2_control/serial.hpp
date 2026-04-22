@@ -13,8 +13,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#ifndef CUGO_ROS2_CONTROL2_SERIAL_HPP
-#define CUGO_ROS2_CONTROL2_SERIAL_HPP
+#ifndef CUGO_V4_5_ROS2_CONTROL_SERIAL_HPP
+#define CUGO_V4_5_ROS2_CONTROL_SERIAL_HPP
 
 #include <algorithm>
 #include <array>
@@ -32,21 +32,8 @@
 #include <vector>
 #include <optional>
 
-#define PACKET_SIZE 72
-#define PACKET_HEADER_SIZE 8
-#define PACKET_BODY_SIZE 64
-
-namespace cugo_ros2_control2
+namespace cugo_v4_5_ros2_control
 {
-
-struct SendValue
-{
-  uint16_t product_id;
-  uint16_t robot_id;
-  float l_rpm;
-  float r_rpm;
-  // 送信メッセージが増えればここに追加
-};
 
 class Serial
 {
@@ -54,42 +41,40 @@ public:
   // コールバック関数の型エイリアス
   using DataCallback = std::function<void (const std::vector<uint8_t> &)>;
 
-  Serial();
+  Serial(uint8_t delimiter = 0x00);
   ~Serial();
+
   void open(const std::string & port, int baudrate);
   void close();
   bool reconnect(const std::string & port, int baudrate);
+
+  bool is_open() const;
+
   void start_read();
   void register_callback(DataCallback callback);
-  void write(const SendValue & sv);
+  void flush_buffer();
 
-  // パケット関連メソッド
-  static std::vector<unsigned char> create_packet(const SendValue & sv);
-  static std::vector<unsigned char> encode(const std::vector<unsigned char> & raw_packet);
-  static std::vector<unsigned char> decode(const std::vector<unsigned char> & encoded_packet);
-  static uint16_t calc_checksum(const unsigned char * body_data, size_t body_size);
+  // packet_buffer_ がこのサイズを超えた場合にフラッシュしてフレーミングを再同期する
+  static constexpr size_t MAX_BUFFER_SIZE = 1024;
 
-  // バイナリ変換
-  static std::vector<unsigned char> float_to_bin(float value);
-  static float bin_to_float(const unsigned char * data);
-  static std::vector<unsigned char> int32_to_bin(int32_t value);
-  static int32_t bin_to_int32(const unsigned char * data);
+  // 送信メソッド: 既にエンコード済みのバイト列を受け取る
+  void write(const std::vector<uint8_t> & data);
 
-  // boostライブラリ
+  uint8_t delimiter_;
   boost::asio::io_context io_context_;
   boost::asio::serial_port serial_port_;
   std::thread io_thread_;
   std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
   work_guard_;
-  std::array<uint8_t, 256> raw_read_buffer_;
-  std::vector<uint8_t> packet_buffer_;
-  //boost::asio::streambuf stream_buffer_;
-  DataCallback data_callback_;
 
 private:
+  std::array<uint8_t, 256> raw_read_buffer_;
+  std::vector<uint8_t> packet_buffer_;
+  DataCallback data_callback_;
+
   void handle_read(const boost::system::error_code & error, std::size_t bytes_transferred);
   void handle_write(const boost::system::error_code & error, std::size_t bytes_transferred);
 };
 
-}  // namespace cugo_ros2_control2
-#endif  // CUGO_ROS2_CONTROL2_SERIAL_HPP
+}  // namespace cugo_v4_5_ros2_control
+#endif  // CUGO_V4_5_ROS2_CONTROL_SERIAL_HPP
