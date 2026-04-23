@@ -51,6 +51,17 @@ std::vector<uint8_t> CugoProtocol::serialize(const ControlCommand & cmd, size_t 
     std::memcpy(body_ptr + BODY_OFFSET_VEL_LINEAR_Y, &lin_y_int16, sizeof(int16_t));
     std::memcpy(body_ptr + BODY_OFFSET_VEL_ANGULAR_Z, &ang_z_int16, sizeof(int16_t));
 
+      // 追加 I/O フィールドの書き込み (body[6-14])
+    std::memcpy(body_ptr + BODY_OFFSET_ENABLE_7_14,       &cmd.enable_7_14,             sizeof(uint8_t));
+    std::memcpy(body_ptr + BODY_OFFSET_MODE_SWITCH,       &cmd.mode_switch,             sizeof(uint8_t));
+    std::memcpy(body_ptr + BODY_OFFSET_EMERGENCY_DECEL,   &cmd.emergency_decel,         sizeof(uint8_t));
+    std::memcpy(body_ptr + BODY_OFFSET_RESET_CTRL_ERROR,  &cmd.reset_controller_error,  sizeof(uint8_t));
+    std::memcpy(body_ptr + BODY_OFFSET_RESET_MD_ERROR,    &cmd.reset_motordriver_error, sizeof(uint8_t));
+    std::memcpy(body_ptr + BODY_OFFSET_HEADLIGHT_CMD,     &cmd.headlight_control,       sizeof(uint8_t));
+    std::memcpy(body_ptr + BODY_OFFSET_TOWERLIGHT_CMD,    &cmd.towerlight_control,      sizeof(uint8_t));
+    std::memcpy(body_ptr + BODY_OFFSET_BUMPER_CONFIG_CMD, &cmd.bumper_config,           sizeof(uint8_t));
+    std::memcpy(body_ptr + BODY_OFFSET_BRAKE_CONFIG_CMD,  &cmd.brake_config,            sizeof(uint8_t));
+
       // プロダクトID, ロボットID の書き込み
     std::memcpy(body_ptr + BODY_OFFSET_PRODUCT_ID, &cmd.product_id, sizeof(uint16_t));
     std::memcpy(body_ptr + BODY_OFFSET_ROBOT_ID, &cmd.robot_id, sizeof(uint16_t));
@@ -154,6 +165,29 @@ bool CugoProtocol::deserialize(
     out_state.linear_x = velocity_to_double(lin_x_int16);
     out_state.linear_y = velocity_to_double(lin_y_int16);
     out_state.angular_z = velocity_to_double(ang_z_int16);
+
+      // 追加 I/O フィールドの読み出し (body[6-47])
+    std::memcpy(&out_state.controller_status,       body_ptr + BODY_OFFSET_CONTROLLER_STATUS, sizeof(uint8_t));
+    std::memcpy(&out_state.controller_error,        body_ptr + BODY_OFFSET_CONTROLLER_ERROR,  sizeof(uint8_t));
+    std::memcpy(&out_state.motordriver_error,       body_ptr + BODY_OFFSET_MOTORDRIVER_ERROR, sizeof(uint8_t));
+    std::memcpy(&out_state.driver_voltage_raw,      body_ptr + BODY_OFFSET_DRIVER_VOLTAGE,    sizeof(uint16_t));
+    std::memcpy(&out_state.headlight_status,        body_ptr + BODY_OFFSET_HEADLIGHT_STATUS,  sizeof(uint8_t));
+    std::memcpy(&out_state.towerlight_status,       body_ptr + BODY_OFFSET_TOWERLIGHT_STATUS, sizeof(uint8_t));
+    std::memcpy(&out_state.io_input_status,         body_ptr + BODY_OFFSET_IO_INPUT_STATUS,   sizeof(uint8_t));
+    std::memcpy(&out_state.encoder_motor0,          body_ptr + BODY_OFFSET_ENCODER_MOTOR0,    sizeof(uint32_t));
+    std::memcpy(&out_state.encoder_motor1,          body_ptr + BODY_OFFSET_ENCODER_MOTOR1,    sizeof(uint32_t));
+    std::memcpy(&out_state.encoder_motor2,          body_ptr + BODY_OFFSET_ENCODER_MOTOR2,    sizeof(uint32_t));
+    std::memcpy(&out_state.encoder_motor3,          body_ptr + BODY_OFFSET_ENCODER_MOTOR3,    sizeof(uint32_t));
+    std::memcpy(&out_state.motordriver_temp0,       body_ptr + BODY_OFFSET_MD_TEMP0,          sizeof(uint16_t));
+    std::memcpy(&out_state.motordriver_temp1,       body_ptr + BODY_OFFSET_MD_TEMP1,          sizeof(uint16_t));
+    std::memcpy(&out_state.motordriver_temp2,       body_ptr + BODY_OFFSET_MD_TEMP2,          sizeof(uint16_t));
+    std::memcpy(&out_state.motordriver_temp3,       body_ptr + BODY_OFFSET_MD_TEMP3,          sizeof(uint16_t));
+    std::memcpy(&out_state.motordriver_error_code0, body_ptr + BODY_OFFSET_MD_ERROR_CODE0,    sizeof(uint16_t));
+    std::memcpy(&out_state.motordriver_error_code1, body_ptr + BODY_OFFSET_MD_ERROR_CODE1,    sizeof(uint16_t));
+    std::memcpy(&out_state.motordriver_error_code2, body_ptr + BODY_OFFSET_MD_ERROR_CODE2,    sizeof(uint16_t));
+    std::memcpy(&out_state.motordriver_error_code3, body_ptr + BODY_OFFSET_MD_ERROR_CODE3,    sizeof(uint16_t));
+    std::memcpy(&out_state.bumper_config,           body_ptr + BODY_OFFSET_BUMPER_CONFIG,     sizeof(uint8_t));
+    std::memcpy(&out_state.brake_config,            body_ptr + BODY_OFFSET_BRAKE_CONFIG,      sizeof(uint8_t));
   } else {
       // データ不足エラー
     error_msg = "Body size too small for RobotState data";
