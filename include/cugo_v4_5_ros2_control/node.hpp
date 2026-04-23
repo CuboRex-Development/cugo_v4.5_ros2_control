@@ -21,11 +21,22 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/empty.hpp>
+#include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/uint8.hpp>
+#include <std_msgs/msg/uint16.hpp>
+#include <std_msgs/msg/uint32.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <atomic>
 #include <mutex>
 #include <vector>
+
+#include "cugo_v4_5_ros2_msgs/msg/controller_status.hpp"
+#include "cugo_v4_5_ros2_msgs/msg/controller_error.hpp"
+#include "cugo_v4_5_ros2_msgs/msg/motor_driver_error.hpp"
+#include "cugo_v4_5_ros2_msgs/msg/headlight_status.hpp"
+#include "cugo_v4_5_ros2_msgs/msg/towerlight_status.hpp"
 
 #include "cugo_v4_5_ros2_control/cugo.hpp"
 #include "cugo_v4_5_ros2_control/serial.hpp"
@@ -71,15 +82,79 @@ private:
   void control_loop();
   void publish_odom_and_tf();
 
+  // 追加 I/O サブスクライバ コールバック
+  void cmd_mode_callback(const std_msgs::msg::UInt8::SharedPtr msg);
+  void cmd_emergency_decel_callback(const std_msgs::msg::Empty::SharedPtr msg);
+  void cmd_reset_controller_error_callback(
+    const cugo_v4_5_ros2_msgs::msg::ControllerError::SharedPtr msg);
+  void cmd_reset_motordriver_error_callback(
+    const cugo_v4_5_ros2_msgs::msg::MotorDriverError::SharedPtr msg);
+  void cmd_headlight_callback(const cugo_v4_5_ros2_msgs::msg::HeadlightStatus::SharedPtr msg);
+  void cmd_towerlight_callback(const cugo_v4_5_ros2_msgs::msg::TowerlightStatus::SharedPtr msg);
+  void cmd_bumper_config_callback(const std_msgs::msg::UInt8::SharedPtr msg);
+  void cmd_brake_config_callback(const std_msgs::msg::UInt8::SharedPtr msg);
+
   // サブスクライバーとパブリッシャー
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr handshake_pub_; // ハンドシェイク状態
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
+  // 追加 I/O サブスクライバ
+  rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr cmd_mode_sub_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr cmd_emergency_decel_sub_;
+  rclcpp::Subscription<cugo_v4_5_ros2_msgs::msg::ControllerError>::SharedPtr
+    cmd_reset_controller_error_sub_;
+  rclcpp::Subscription<cugo_v4_5_ros2_msgs::msg::MotorDriverError>::SharedPtr
+    cmd_reset_motordriver_error_sub_;
+  rclcpp::Subscription<cugo_v4_5_ros2_msgs::msg::HeadlightStatus>::SharedPtr cmd_headlight_sub_;
+  rclcpp::Subscription<cugo_v4_5_ros2_msgs::msg::TowerlightStatus>::SharedPtr cmd_towerlight_sub_;
+  rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr cmd_bumper_config_sub_;
+  rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr cmd_brake_config_sub_;
+
+  // 追加 I/O パブリッシャ
+  rclcpp::Publisher<cugo_v4_5_ros2_msgs::msg::ControllerStatus>::SharedPtr
+    controller_status_pub_;
+  rclcpp::Publisher<cugo_v4_5_ros2_msgs::msg::ControllerError>::SharedPtr
+    controller_error_pub_;
+  rclcpp::Publisher<cugo_v4_5_ros2_msgs::msg::MotorDriverError>::SharedPtr
+    motordriver_error_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr driver_voltage_pub_;
+  rclcpp::Publisher<cugo_v4_5_ros2_msgs::msg::HeadlightStatus>::SharedPtr headlight_status_pub_;
+  rclcpp::Publisher<cugo_v4_5_ros2_msgs::msg::TowerlightStatus>::SharedPtr towerlight_status_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr io_input_status_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt32>::SharedPtr encoder_motor0_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt32>::SharedPtr encoder_motor1_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt32>::SharedPtr encoder_motor2_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt32>::SharedPtr encoder_motor3_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr motordriver_temp0_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr motordriver_temp1_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr motordriver_temp2_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr motordriver_temp3_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr motordriver_error_code0_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr motordriver_error_code1_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr motordriver_error_code2_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr motordriver_error_code3_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr bumper_config_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr brake_config_pub_;
+
   // インスタンス
   std::unique_ptr<cugo_v4_5_ros2_control::CuGo> cugo_;
   std::shared_ptr<cugo_v4_5_ros2_control::Serial> serial_;
+
+  // data_mutex_ で保護するサブスクライバ由来の送信待ちコマンド
+  struct PendingCommand
+  {
+    uint8_t enable_bits             = 0;  // enable_7_14 に OR するビット
+    uint8_t mode_switch             = 0;
+    uint8_t emergency_decel         = 0;
+    uint8_t reset_controller_error  = 0;
+    uint8_t reset_motordriver_error = 0;
+    uint8_t headlight_control       = 0;
+    uint8_t towerlight_control      = 0;
+    uint8_t bumper_config           = 0;
+    uint8_t brake_config            = 0;
+  };
 
   // データ共有
   std::atomic<ConnectionState> connection_state_{ConnectionState::CONNECTED};
@@ -88,6 +163,7 @@ private:
   geometry_msgs::msg::Twist latest_cmd_vel_;
   rclcpp::Time last_cmd_vel_time_;
   rclcpp::Time last_serial_receive_time_;
+  PendingCommand pending_cmd_;
 
   bool is_first_serial_data_{true};
 

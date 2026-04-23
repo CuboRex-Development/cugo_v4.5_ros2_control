@@ -70,6 +70,16 @@ constexpr size_t BODY_OFFSET_MD_ERROR_CODE3        = 44;
 constexpr size_t BODY_OFFSET_BUMPER_CONFIG         = 46;
 constexpr size_t BODY_OFFSET_BRAKE_CONFIG          = 47;
 
+// enable_7_14 (body[6]) のビット定義: bit が 1 のフィールドのみ車両コントローラへ反映される
+constexpr uint8_t ENABLE_BIT_MODE_SWITCH       = 0x01;  // body[7]
+constexpr uint8_t ENABLE_BIT_EMERGENCY_DECEL   = 0x02;  // body[8]
+constexpr uint8_t ENABLE_BIT_RESET_CTRL_ERROR  = 0x04;  // body[9]
+constexpr uint8_t ENABLE_BIT_RESET_MD_ERROR    = 0x08;  // body[10]
+constexpr uint8_t ENABLE_BIT_HEADLIGHT         = 0x10;  // body[11]
+constexpr uint8_t ENABLE_BIT_TOWERLIGHT        = 0x20;  // body[12]
+constexpr uint8_t ENABLE_BIT_BUMPER_CONFIG     = 0x40;  // body[13]
+constexpr uint8_t ENABLE_BIT_BRAKE_CONFIG      = 0x80;  // body[14]
+
   // ==========================================
   // データ型定義 (Types)
   // ==========================================
