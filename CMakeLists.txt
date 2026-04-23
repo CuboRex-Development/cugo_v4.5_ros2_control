@@ -20,6 +20,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(diagnostic_updater REQUIRED)
+find_package(cugo_v4_5_ros2_msgs REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 
 if(NOT Boost_FOUND)
@@ -68,6 +69,7 @@ ament_target_dependencies(node_lib
   tf2_ros
   tf2_geometry_msgs
   diagnostic_updater
+  cugo_v4_5_ros2_msgs
 )
 
 # ---------------------------------------------------------
@@ -151,6 +153,7 @@ if(BUILD_TESTING)
     tf2_ros
     tf2_geometry_msgs
     diagnostic_updater
+    cugo_v4_5_ros2_msgs
   )
 
   # 4. serial.cppのテスト
