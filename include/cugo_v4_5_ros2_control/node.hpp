@@ -23,9 +23,9 @@
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/float32.hpp>
-#include <std_msgs/msg/uint8.hpp>
-#include <std_msgs/msg/uint16.hpp>
-#include <std_msgs/msg/uint32.hpp>
+#include <std_msgs/msg/u_int8.hpp>
+#include <std_msgs/msg/u_int16.hpp>
+#include <std_msgs/msg/u_int32.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <atomic>
