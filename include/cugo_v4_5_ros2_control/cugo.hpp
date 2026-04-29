@@ -69,6 +69,8 @@ public:
 
   // 指令生成 (Protocolを使ってバイト列を作成)
   std::vector<uint8_t> create_command_packet(double linear_x, double linear_y, double angular_z);
+  // IO フィールド付きオーバーロード: cmd の product_id / robot_id は内部値で上書きされる
+  std::vector<uint8_t> create_command_packet(ControlCommand cmd);
 
   // --- ゲッター ---
   Pose2D get_pose() const;

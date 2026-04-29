@@ -36,6 +36,8 @@ ROS 2 Jazzy Jalisco 以降で動作します。
 
 `/cmd_vel` で受け取った速度指令を [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) に送信し、マイコンから受け取った現在速度をもとにオドメトリを計算して `/odom` として Publish します。
 
+速度制御に加え、ヘッドライト・タワーライト・バンパー・ブレーキなどの IO デバイス制御と、コントローラステータス・エンコーダ・モータドライバ温度などのセンサ情報モニタリングに対応しています。IO 制御はトピック経由で行い、センサデータは各トピックへ Publish されます。
+
 <img width="4077" height="2541" alt="cugo_v4 5_ros2_control" src="https://github.com/user-attachments/assets/f1fafdfb-5448-4293-af8a-70d4c094e65e" />
 
 
@@ -94,6 +96,8 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
   - Ubuntu 24.04 LTS / ROS 2 Jazzy Jalisco
 
 ### 依存パッケージ
+
+  - [cugo_v4.5_ros2_msgs](https://github.com/CuboRex-Development/cugo_v4.5_ros2_msgs) — 本パッケージが使用するカスタムメッセージ定義パッケージ(**必須**)
   - xacro
   - robot_state_publisher
   - joint_state_publisher_gui(URDF確認・デバッグ用)
@@ -116,13 +120,22 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
    git clone https://github.com/CuboRex-Development/cugo_v4.5_ros2_control.git
    ```
 
-3. rosdepで依存パッケージをインストールします。
+3. カスタムメッセージパッケージ [cugo_v4.5_ros2_msgs](https://github.com/CuboRex-Development/cugo_v4.5_ros2_msgs) をクローンします。
+
+   本パッケージは `cugo_v4.5_ros2_control` が使用するカスタムメッセージ型を提供します。同じワークスペース内に配置する必要があります。
 
    ```bash
-   rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_v4.5_ros2_control
+   cd ~/your_ros2_ws/src
+   git clone https://github.com/CuboRex-Development/cugo_v4.5_ros2_msgs.git
    ```
 
-4. cugo_v4.5_ros2_control ノードをビルドします。
+4. rosdepで依存パッケージをインストールします。
+
+   ```bash
+   rosdep install -i --from-paths ~/your_ros2_ws/src/cugo_v4.5_ros2_control ~/your_ros2_ws/src/cugo_v4.5_ros2_msgs
+   ```
+
+5. ノードをビルドします。
 
    ```bash
    cd ~/your_ros2_ws
@@ -454,10 +467,70 @@ RViz2 が起動したら、以下の設定を行ってください。
 - `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/latest/api/std_msgs/msg/Bool.html))  
   マイコンとのハンドシェイク(接続確立)状態を配信します。接続中は `true`、未接続または切断時は `false` になります。
 
+- `/controller_status` (cugo_v4_5_ros2_msgs/msg/ControllerStatus)  
+  CRST01A のコントローラステータスビットを配信します。
+
+- `/controller_error` (cugo_v4_5_ros2_msgs/msg/ControllerError)  
+  CRST01A のコントローラエラービットを配信します。
+
+- `/motordriver_error` (cugo_v4_5_ros2_msgs/msg/MotorDriverError)  
+  CRST01A のモータドライバエラービットを配信します。
+
+- `/driver_voltage` ([std_msgs/msg/Float32](https://docs.ros2.org/latest/api/std_msgs/msg/Float32.html))  
+  ドライバ電源電圧 [V] を配信します。
+
+- `/headlight_status` (cugo_v4_5_ros2_msgs/msg/HeadlightStatus)  
+  ヘッドライトの現在状態を配信します。
+
+- `/towerlight_status` (cugo_v4_5_ros2_msgs/msg/TowerlightStatus)  
+  タワーライトの現在状態を配信します。
+
+- `/io_input_status` ([std_msgs/msg/UInt8](https://docs.ros2.org/latest/api/std_msgs/msg/UInt8.html))  
+  外部 4bit デジタル入力の現在状態を配信します。
+
+- `/encoder/motor0` 〜 `/encoder/motor3` ([std_msgs/msg/UInt32](https://docs.ros2.org/latest/api/std_msgs/msg/UInt32.html))  
+  各モータのエンコーダカウント値を配信します。
+
+- `/motordriver_temp/motor0` 〜 `/motordriver_temp/motor3` ([std_msgs/msg/UInt16](https://docs.ros2.org/latest/api/std_msgs/msg/UInt16.html))  
+  各モータドライバの温度 [℃] を配信します。
+
+- `/motordriver_error_code/motor0` 〜 `/motordriver_error_code/motor3` ([std_msgs/msg/UInt16](https://docs.ros2.org/latest/api/std_msgs/msg/UInt16.html))  
+  各モータドライバのエラーコードを配信します。
+
+- `/config/bumper` ([std_msgs/msg/UInt8](https://docs.ros2.org/latest/api/std_msgs/msg/UInt8.html))  
+  CRST01A フラッシュに保存されたバンパー設定値を配信します。
+
+- `/config/brake` ([std_msgs/msg/UInt8](https://docs.ros2.org/latest/api/std_msgs/msg/UInt8.html))  
+  CRST01A フラッシュに保存されたブレーキ設定値を配信します。
+
 ### Subscribed Topics
 
 - `/cmd_vel` ([geometry_msgs/msg/Twist](https://docs.ros2.org/latest/api/geometry_msgs/msg/Twist.html))  
   ロボットへの速度指令を受信します。`linear.x`(前後)と `angular.z`(旋回)を使用します。
+
+- `/cmd_mode` ([std_msgs/msg/UInt8](https://docs.ros2.org/latest/api/std_msgs/msg/UInt8.html))  
+  走行モードの切替を受信します。`0x80` = RC モード、`0x81` = CMD モード。
+
+- `/cmd_emergency_decel` ([std_msgs/msg/Empty](https://docs.ros2.org/latest/api/std_msgs/msg/Empty.html))  
+  緊急減速トリガを受信します。メッセージを受信した時点で緊急減速が発動します。
+
+- `/cmd_reset_controller_error` (cugo_v4_5_ros2_msgs/msg/ControllerError)  
+  解除するコントローラエラービットを受信します。
+
+- `/cmd_reset_motordriver_error` (cugo_v4_5_ros2_msgs/msg/MotorDriverError)  
+  解除するモータドライバエラービットを受信します。
+
+- `/cmd_headlight` (cugo_v4_5_ros2_msgs/msg/HeadlightStatus)  
+  ヘッドライトの制御指令を受信します。
+
+- `/cmd_towerlight` (cugo_v4_5_ros2_msgs/msg/TowerlightStatus)  
+  タワーライトの制御指令を受信します。
+
+- `/cmd_bumper_config` ([std_msgs/msg/UInt8](https://docs.ros2.org/latest/api/std_msgs/msg/UInt8.html))  
+  バンパー設定値を受信し、CRST01A へ書き込みます。
+
+- `/cmd_brake_config` ([std_msgs/msg/UInt8](https://docs.ros2.org/latest/api/std_msgs/msg/UInt8.html))  
+  ブレーキ設定値を受信し、CRST01A へ書き込みます。
 
 # TF
 
