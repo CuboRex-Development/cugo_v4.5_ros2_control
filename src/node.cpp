@@ -20,6 +20,7 @@
 #include <sstream>
 
 using namespace cugo_v4_5_ros2_control;
+namespace cmsgs = cugo_v4_5_ros2_msgs::msg;
 Node::Node()
 : rclcpp::Node("cugo_v4_5_ros2_control")
 {
@@ -229,6 +230,65 @@ Node::Node()
 
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
+  // 追加 I/O サブスクライバ
+  cmd_mode_sub_ = this->create_subscription<std_msgs::msg::UInt8>(
+    "/cmd_mode", 1, std::bind(&Node::cmd_mode_callback, this, std::placeholders::_1));
+  cmd_emergency_decel_sub_ = this->create_subscription<std_msgs::msg::Empty>(
+    "/cmd_emergency_decel", 1,
+    std::bind(&Node::cmd_emergency_decel_callback, this, std::placeholders::_1));
+  cmd_reset_controller_error_sub_ = this->create_subscription<cmsgs::ControllerError>(
+    "/cmd_reset_controller_error", 1,
+    std::bind(&Node::cmd_reset_controller_error_callback, this, std::placeholders::_1));
+  cmd_reset_motordriver_error_sub_ = this->create_subscription<cmsgs::MotorDriverError>(
+    "/cmd_reset_motordriver_error", 1,
+    std::bind(&Node::cmd_reset_motordriver_error_callback, this, std::placeholders::_1));
+  cmd_headlight_sub_ = this->create_subscription<cmsgs::HeadlightStatus>(
+    "/cmd_headlight", 1,
+    std::bind(&Node::cmd_headlight_callback, this, std::placeholders::_1));
+  cmd_towerlight_sub_ = this->create_subscription<cmsgs::TowerlightStatus>(
+    "/cmd_towerlight", 1,
+    std::bind(&Node::cmd_towerlight_callback, this, std::placeholders::_1));
+  cmd_bumper_config_sub_ = this->create_subscription<std_msgs::msg::UInt8>(
+    "/cmd_bumper_config", 1,
+    std::bind(&Node::cmd_bumper_config_callback, this, std::placeholders::_1));
+  cmd_brake_config_sub_ = this->create_subscription<std_msgs::msg::UInt8>(
+    "/cmd_brake_config", 1,
+    std::bind(&Node::cmd_brake_config_callback, this, std::placeholders::_1));
+
+  // 追加 I/O パブリッシャ
+  controller_status_pub_ =
+    this->create_publisher<cmsgs::ControllerStatus>("/controller_status", 10);
+  controller_error_pub_ =
+    this->create_publisher<cmsgs::ControllerError>("/controller_error", 10);
+  motordriver_error_pub_ =
+    this->create_publisher<cmsgs::MotorDriverError>("/motordriver_error", 10);
+  driver_voltage_pub_     = this->create_publisher<std_msgs::msg::Float32>("/driver_voltage", 10);
+  headlight_status_pub_   = this->create_publisher<cmsgs::HeadlightStatus>("/headlight_status", 10);
+  towerlight_status_pub_  = this->create_publisher<cmsgs::TowerlightStatus>("/towerlight_status", 10);
+  io_input_status_pub_    = this->create_publisher<std_msgs::msg::UInt8>("/io_input_status", 10);
+  encoder_motor0_pub_     = this->create_publisher<std_msgs::msg::UInt32>("/encoder/motor0", 10);
+  encoder_motor1_pub_     = this->create_publisher<std_msgs::msg::UInt32>("/encoder/motor1", 10);
+  encoder_motor2_pub_     = this->create_publisher<std_msgs::msg::UInt32>("/encoder/motor2", 10);
+  encoder_motor3_pub_     = this->create_publisher<std_msgs::msg::UInt32>("/encoder/motor3", 10);
+  motordriver_temp0_pub_  =
+    this->create_publisher<std_msgs::msg::UInt16>("/motordriver_temp/motor0", 10);
+  motordriver_temp1_pub_  =
+    this->create_publisher<std_msgs::msg::UInt16>("/motordriver_temp/motor1", 10);
+  motordriver_temp2_pub_  =
+    this->create_publisher<std_msgs::msg::UInt16>("/motordriver_temp/motor2", 10);
+  motordriver_temp3_pub_  =
+    this->create_publisher<std_msgs::msg::UInt16>("/motordriver_temp/motor3", 10);
+  motordriver_error_code0_pub_ =
+    this->create_publisher<std_msgs::msg::UInt16>("/motordriver_error_code/motor0", 10);
+  motordriver_error_code1_pub_ =
+    this->create_publisher<std_msgs::msg::UInt16>("/motordriver_error_code/motor1", 10);
+  motordriver_error_code2_pub_ =
+    this->create_publisher<std_msgs::msg::UInt16>("/motordriver_error_code/motor2", 10);
+  motordriver_error_code3_pub_ =
+    this->create_publisher<std_msgs::msg::UInt16>("/motordriver_error_code/motor3", 10);
+  bumper_config_pub_ = this->create_publisher<std_msgs::msg::UInt8>("/config/bumper", 10);
+  brake_config_pub_  = this->create_publisher<std_msgs::msg::UInt8>("/config/brake",  10);
+
   // ループ処理の開始
   control_timer = this->create_wall_timer(
       std::chrono::milliseconds(static_cast<int>(1000.0 / control_frequency)),
@@ -400,6 +460,81 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
   // (cugo_の状態はupdate_stateで更新済み)
   if (should_publish) {
     publish_odom_and_tf();
+
+    // 4. 追加 I/O トピックの発行
+    {
+      cmsgs::ControllerStatus cs;
+      cs.is_command_mode.data      = static_cast<bool>((state.controller_status >> 0) & 0x01);
+      cs.is_auto_brake_active.data = static_cast<bool>((state.controller_status >> 1) & 0x01);
+      cs.is_sbus_lost.data         = static_cast<bool>((state.controller_status >> 2) & 0x01);
+      cs.is_estop_pressed.data     = static_cast<bool>((state.controller_status >> 3) & 0x01);
+      cs.is_bumper0_pressed.data   = static_cast<bool>((state.controller_status >> 4) & 0x01);
+      cs.is_bumper1_pressed.data   = static_cast<bool>((state.controller_status >> 5) & 0x01);
+      controller_status_pub_->publish(cs);
+
+      cmsgs::ControllerError ce;
+      ce.power_12v_undervoltage.data = static_cast<bool>((state.controller_error >> 0) & 0x01);
+      ce.driver_overvoltage.data     = static_cast<bool>((state.controller_error >> 1) & 0x01);
+      ce.driver_undervoltage.data    = static_cast<bool>((state.controller_error >> 2) & 0x01);
+      ce.emergency_decel_latch.data  = static_cast<bool>((state.controller_error >> 3) & 0x01);
+      ce.estop_latch.data            = static_cast<bool>((state.controller_error >> 4) & 0x01);
+      ce.bumper_stop_active.data     = static_cast<bool>((state.controller_error >> 5) & 0x01);
+      ce.other_error.data            = static_cast<bool>((state.controller_error >> 6) & 0x01);
+      controller_error_pub_->publish(ce);
+
+      cmsgs::MotorDriverError me;
+      me.overcurrent.data     = static_cast<bool>((state.motordriver_error >> 0) & 0x01);
+      me.overvoltage.data     = static_cast<bool>((state.motordriver_error >> 1) & 0x01);
+      me.overtemperature.data = static_cast<bool>((state.motordriver_error >> 2) & 0x01);
+      me.other_error.data     = static_cast<bool>((state.motordriver_error >> 3) & 0x01);
+      me.md0_can_timeout.data = static_cast<bool>((state.motordriver_error >> 4) & 0x01);
+      me.md1_can_timeout.data = static_cast<bool>((state.motordriver_error >> 5) & 0x01);
+      me.md2_can_timeout.data = static_cast<bool>((state.motordriver_error >> 6) & 0x01);
+      me.md3_can_timeout.data = static_cast<bool>((state.motordriver_error >> 7) & 0x01);
+      motordriver_error_pub_->publish(me);
+
+      std_msgs::msg::Float32 volt;
+      volt.data = static_cast<float>(state.driver_voltage_raw) * 0.1f;
+      driver_voltage_pub_->publish(volt);
+
+      cmsgs::HeadlightStatus hs;
+      hs.headlight0.data = static_cast<bool>((state.headlight_status >> 0) & 0x01);
+      hs.headlight1.data = static_cast<bool>((state.headlight_status >> 1) & 0x01);
+      headlight_status_pub_->publish(hs);
+
+      cmsgs::TowerlightStatus ts;
+      ts.light0.data = static_cast<uint8_t>((state.towerlight_status >> 0) & 0x03);
+      ts.light1.data = static_cast<uint8_t>((state.towerlight_status >> 2) & 0x03);
+      ts.light2.data = static_cast<uint8_t>((state.towerlight_status >> 4) & 0x03);
+      towerlight_status_pub_->publish(ts);
+
+      std_msgs::msg::UInt8 io;
+      io.data = state.io_input_status;
+      io_input_status_pub_->publish(io);
+
+      std_msgs::msg::UInt32 enc;
+      enc.data = state.encoder_motor0; encoder_motor0_pub_->publish(enc);
+      enc.data = state.encoder_motor1; encoder_motor1_pub_->publish(enc);
+      enc.data = state.encoder_motor2; encoder_motor2_pub_->publish(enc);
+      enc.data = state.encoder_motor3; encoder_motor3_pub_->publish(enc);
+
+      std_msgs::msg::UInt16 temp;
+      temp.data = state.motordriver_temp0; motordriver_temp0_pub_->publish(temp);
+      temp.data = state.motordriver_temp1; motordriver_temp1_pub_->publish(temp);
+      temp.data = state.motordriver_temp2; motordriver_temp2_pub_->publish(temp);
+      temp.data = state.motordriver_temp3; motordriver_temp3_pub_->publish(temp);
+
+      std_msgs::msg::UInt16 ec;
+      ec.data = state.motordriver_error_code0; motordriver_error_code0_pub_->publish(ec);
+      ec.data = state.motordriver_error_code1; motordriver_error_code1_pub_->publish(ec);
+      ec.data = state.motordriver_error_code2; motordriver_error_code2_pub_->publish(ec);
+      ec.data = state.motordriver_error_code3; motordriver_error_code3_pub_->publish(ec);
+
+      std_msgs::msg::UInt8 cfg;
+      cfg.data = state.bumper_config; bumper_config_pub_->publish(cfg);
+      cfg.data = state.brake_config;  brake_config_pub_->publish(cfg);
+    }
+
     if (callback_log_) {
       RCLCPP_INFO(this->get_logger(), "serial_data_callback() published");
     }
@@ -594,6 +729,8 @@ void Node::control_loop()
 
   bool local_waiting_for_response = false;
 
+  PendingCommand local_pending;
+
   // cmd_velにアクセスしてすぐにロック解除
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -601,6 +738,9 @@ void Node::control_loop()
     local_last_cmd_vel_time = last_cmd_vel_time_;
     local_last_serial_receive_time = last_serial_receive_time_;
     local_waiting_for_response = waiting_for_response_;
+    // PendingCommand をコピーしてクリア (ワンショット送信)
+    local_pending = pending_cmd_;
+    pending_cmd_ = PendingCommand{};
   }
 
   double vx = local_cmd_vel.linear.x;
@@ -618,12 +758,24 @@ void Node::control_loop()
         this->get_logger(), "[TX cmd] Vx=%lf, Vy=%lf, Omega z=%lf", vx, vy, wz);
   }
 
-  // create_command_packetはconstメソッド相当だが、安全のためcugoアクセスとしてロック推奨
-  // ただし頻度が低いパラメータ(ID)参照のみならロックなしでも動くが、設計の一貫性のためにロック
+  ControlCommand io_cmd;
+  io_cmd.linear_x                = vx;
+  io_cmd.linear_y                = vy;
+  io_cmd.angular_z               = wz;
+  io_cmd.enable_7_14             = local_pending.enable_bits;
+  io_cmd.mode_switch             = local_pending.mode_switch;
+  io_cmd.emergency_decel         = local_pending.emergency_decel;
+  io_cmd.reset_controller_error  = local_pending.reset_controller_error;
+  io_cmd.reset_motordriver_error = local_pending.reset_motordriver_error;
+  io_cmd.headlight_control       = local_pending.headlight_control;
+  io_cmd.towerlight_control      = local_pending.towerlight_control;
+  io_cmd.bumper_config           = local_pending.bumper_config;
+  io_cmd.brake_config            = local_pending.brake_config;
+
   std::vector<uint8_t> packet;
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    packet = cugo_->create_command_packet(vx, vy, wz);
+    packet = cugo_->create_command_packet(io_cmd);
   }
 
   // --- response_lost_timeout チェック ---
@@ -693,6 +845,94 @@ void Node::control_loop()
       handshake_state_ = HandshakeState::INIT;
     }
   }
+}
+
+// ==========================================
+// 追加 I/O サブスクライバ コールバック
+// ==========================================
+
+void Node::cmd_mode_callback(const std_msgs::msg::UInt8::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  pending_cmd_.mode_switch = msg->data;
+  pending_cmd_.enable_bits |= ENABLE_BIT_MODE_SWITCH;
+}
+
+void Node::cmd_emergency_decel_callback(const std_msgs::msg::Empty::SharedPtr /*msg*/)
+{
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  pending_cmd_.emergency_decel = 0x01;
+  pending_cmd_.enable_bits |= ENABLE_BIT_EMERGENCY_DECEL;
+}
+
+void Node::cmd_reset_controller_error_callback(const cmsgs::ControllerError::SharedPtr msg)
+{
+  uint8_t byte_val = 0;
+  if (msg->power_12v_undervoltage.data) { byte_val |= (1 << 0); }
+  if (msg->driver_overvoltage.data)     { byte_val |= (1 << 1); }
+  if (msg->driver_undervoltage.data)    { byte_val |= (1 << 2); }
+  if (msg->emergency_decel_latch.data)  { byte_val |= (1 << 3); }
+  if (msg->estop_latch.data)            { byte_val |= (1 << 4); }
+  if (msg->bumper_stop_active.data)     { byte_val |= (1 << 5); }
+  if (msg->other_error.data)            { byte_val |= (1 << 6); }
+
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  pending_cmd_.reset_controller_error = byte_val;
+  pending_cmd_.enable_bits |= ENABLE_BIT_RESET_CTRL_ERROR;
+}
+
+void Node::cmd_reset_motordriver_error_callback(const cmsgs::MotorDriverError::SharedPtr msg)
+{
+  uint8_t byte_val = 0;
+  if (msg->overcurrent.data)     { byte_val |= (1 << 0); }
+  if (msg->overvoltage.data)     { byte_val |= (1 << 1); }
+  if (msg->overtemperature.data) { byte_val |= (1 << 2); }
+  if (msg->other_error.data)     { byte_val |= (1 << 3); }
+  if (msg->md0_can_timeout.data) { byte_val |= (1 << 4); }
+  if (msg->md1_can_timeout.data) { byte_val |= (1 << 5); }
+  if (msg->md2_can_timeout.data) { byte_val |= (1 << 6); }
+  if (msg->md3_can_timeout.data) { byte_val |= (1 << 7); }
+
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  pending_cmd_.reset_motordriver_error = byte_val;
+  pending_cmd_.enable_bits |= ENABLE_BIT_RESET_MD_ERROR;
+}
+
+void Node::cmd_headlight_callback(const cmsgs::HeadlightStatus::SharedPtr msg)
+{
+  uint8_t byte_val = 0;
+  if (msg->headlight0.data) { byte_val |= (1 << 0); }
+  if (msg->headlight1.data) { byte_val |= (1 << 1); }
+
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  pending_cmd_.headlight_control = byte_val;
+  pending_cmd_.enable_bits |= ENABLE_BIT_HEADLIGHT;
+}
+
+void Node::cmd_towerlight_callback(const cmsgs::TowerlightStatus::SharedPtr msg)
+{
+  uint8_t byte_val =
+    static_cast<uint8_t>((msg->light0.data & 0x03) << 0) |
+    static_cast<uint8_t>((msg->light1.data & 0x03) << 2) |
+    static_cast<uint8_t>((msg->light2.data & 0x03) << 4);
+
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  pending_cmd_.towerlight_control = byte_val;
+  pending_cmd_.enable_bits |= ENABLE_BIT_TOWERLIGHT;
+}
+
+void Node::cmd_bumper_config_callback(const std_msgs::msg::UInt8::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  pending_cmd_.bumper_config = msg->data;
+  pending_cmd_.enable_bits |= ENABLE_BIT_BUMPER_CONFIG;
+}
+
+void Node::cmd_brake_config_callback(const std_msgs::msg::UInt8::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  pending_cmd_.brake_config = msg->data;
+  pending_cmd_.enable_bits |= ENABLE_BIT_BRAKE_CONFIG;
 }
 
 // オドメトリとTFを発行するヘルパー関数

@@ -129,17 +129,20 @@ void CuGo::update_state(const RobotState & state, double dt)
   current_pose_.yaw  = yaw_new;
 }
 
+std::vector<uint8_t> CuGo::create_command_packet(ControlCommand cmd)
+{
+  cmd.product_id = product_id_;
+  cmd.robot_id   = robot_id_;
+  return CugoProtocol::serialize(cmd);
+}
+
 std::vector<uint8_t> CuGo::create_command_packet(double linear_x, double linear_y, double angular_z)
 {
   ControlCommand cmd;
-  cmd.product_id = product_id_; // 保存しているIDを使用
-  cmd.robot_id = robot_id_;
-  cmd.linear_x = linear_x;
-  cmd.linear_y = linear_y;
+  cmd.linear_x  = linear_x;
+  cmd.linear_y  = linear_y;
   cmd.angular_z = angular_z;
-
-  // Protocolに処理を委譲
-  return CugoProtocol::serialize(cmd);
+  return create_command_packet(cmd);
 }
 
 Pose2D CuGo::get_pose() const
