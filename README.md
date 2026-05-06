@@ -100,7 +100,6 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 ### 依存パッケージ
 
   - [cugo_v4.5_ros2_msgs](https://github.com/CuboRex-Development/cugo_v4.5_ros2_msgs) — 本パッケージが使用するカスタムメッセージ定義パッケージ(**必須**)
-  - xacro
   - robot_state_publisher
   - joint_state_publisher_gui(URDF確認・デバッグ用)
   - socat(WiFiモード〔APモード・Stationモード〕を使用する場合のみ)
@@ -327,16 +326,18 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 ### URDF の確認
 
-ロボットモデルを RViz2 で表示して URDF を確認できます。
+`use_urdf: true`(デフォルト)でノードを起動すると、`robot_state_publisher` が起動し `/robot_description` トピックが配信されます。RViz2 でロボットモデルを確認できます。
 
 ```bash
-ros2 launch cugo_v4_5_ros2_control display.launch.py
+ros2 launch cugo_v4_5_ros2_control cugo_v4_5_launch.py
 ```
 
-RViz2 が起動したら、以下の設定を行ってください。
+RViz2 を起動し、以下の設定を行ってください。
 
 1. Fixed Frame を `base_footprint` に設定
 2. Add → `RobotModel` を追加し、`Description Topic` を `/robot_description` に設定
+
+URDF のロードが不要な場合は `use_urdf` を無効化できます。詳細は [Parameters > URDF設定](#urdf設定) を参照してください。
 
 # Parameters
 
@@ -346,6 +347,13 @@ RViz2 が起動したら、以下の設定を行ってください。
 パラメータを変更した場合は `colcon build` を再実行してください。
 
 `params.yaml` で設定できる主なパラメータは以下の通りです。
+
+
+### URDF設定
+
+|  パラメータ  | デフォルト値 | 説明                                                                                                                    |
+| :----------: | :----------: | ----------------------------------------------------------------------------------------------------------------------- |
+| `use_urdf`   |    `true`    | `true`: URDF をロードして `robot_state_publisher` を起動する。`false`: スキップする(処理負荷を下げたい場合に使用) |
 
 
 ### 通信設定
@@ -359,19 +367,6 @@ RViz2 が起動したら、以下の設定を行ってください。
 |    `tcp_port`     |     `8080`      | WiFiモード時の接続先ポート番号                                                                                    |
 |   `bt_address`    |      `""`       | Bluetoothモード時の接続先MACアドレス                                                                              |
 |   `bt_channel`    |       `1`       | Bluetoothモード時の SPP チャンネル番号(通常は `1`)                                                                |
-
-### launch 引数
-
-以下のパラメータは `params.yaml` の編集に加えて、launch 引数でも上書きできます。
-
-|     引数     |  デフォルト値   | 説明                                                                                                              |
-| :----------: | :-------------: | ----------------------------------------------------------------------------------------------------------------- |
-| `comm_type`  |    `serial`     | 通信方式: `serial` / `wifi` / `bluetooth`                                                                         |
-|  `tcp_host`  | `192.168.1.100` | WiFiモード時の接続先IPアドレス(APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済) |
-|  `tcp_port`  |     `8080`      | WiFiモード時の接続先ポート番号                                                                                    |
-| `bt_address` |      `""`       | Bluetoothモード時の接続先MACアドレス                                                                              |
-| `bt_channel` |       `1`       | Bluetoothモード時の SPP チャンネル番号                                                                            |
-| `log_level`  |     `info`      | ログレベル: `debug`, `info`, `warn`, `error`, `fatal`                                                             |
 
 ### 制御設定
 
@@ -455,6 +450,23 @@ RViz2 が起動したら、以下の設定を行ってください。
 |      `callback_log`      |   `false`    | コールバック・制御ループの実行フロー      |
 |        `rtt_log`         |   `false`    | リクエスト〜レスポンス往復時間(ms)        |
 
+---
+
+### launch 引数
+
+以下のパラメータは `params.yaml` の編集に加えて、launch 引数でも上書きできます。
+
+|     引数     |  デフォルト値   | 説明                                                                                                              |
+| :----------: | :-------------: | ----------------------------------------------------------------------------------------------------------------- |
+| `comm_type`  |    `serial`     | 通信方式: `serial` / `wifi` / `bluetooth`                                                                         |
+|  `tcp_host`  | `192.168.1.100` | WiFiモード時の接続先IPアドレス(APモードは `192.168.42.1`がデフォルト、`params.yaml` では `192.168.42.1` に設定済) |
+|  `tcp_port`  |     `8080`      | WiFiモード時の接続先ポート番号                                                                                    |
+| `bt_address` |      `""`       | Bluetoothモード時の接続先MACアドレス                                                                              |
+| `bt_channel` |       `1`       | Bluetoothモード時の SPP チャンネル番号                                                                            |
+| `log_level`  |     `info`      | ログレベル: `debug`, `info`, `warn`, `error`, `fatal`                                                             |
+| `use_urdf`   |     `true`      | `true`: URDF をロードして `robot_state_publisher` を起動する。`false`: スキップする                               |
+
+
 
 # Topics
 
@@ -536,19 +548,18 @@ RViz2 が起動したら、以下の設定を行ってください。
 
 # TF
 
-CuGo を活用したロボットで TF を構築するために xacro を利用します。
-ご自身のロボットに取り付けた部品を記述した xacro を `urdf/parts` に格納してください。
+`use_urdf: true` で起動すると、`robot_state_publisher` が `urdf/cugo_v4_5_urdf.urdf` を読み込み、`/robot_description` トピックと TF を配信します。
 
 ```
 cugo_v4.5_ros2_control
 └── urdf
-    ├── my_cugo_robot.urdf.xacro   ← 部品 xacro を読み込むトップレベルファイル
-    └── parts
-        ├── cugo_v4_5_base.urdf.xacro   ← CuGo 本体の位置関係
-        └── mid360.urdf.xacro          ← センサ搭載サンプル(デフォルトで無効)
+    └── cugo_v4_5_urdf.urdf   ← CuGo V4.5 本体の URDF(メッシュ付き)
+└── meshes
+    ├── base_footprint.dae    ← 表示用メッシュ
+    └── base_footprint.stl    ← コリジョン用メッシュ
 ```
 
-部品を追加する場合は `my_cugo_robot.urdf.xacro` に追記し、`colcon build` を再実行してください。
+センサなど追加の部品を取り付ける場合は、`urdf/cugo_v4_5_urdf.urdf` に `<link>` / `<joint>` を直接追記し、`colcon build` を再実行してください。
 
 # Note
 

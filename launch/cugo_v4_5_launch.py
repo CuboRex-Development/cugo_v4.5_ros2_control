@@ -6,7 +6,6 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction, TimerAction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-import xacro
 
 # WiFiモード時に生成する仮想シリアルポートのパス
 VSERIAL_PATH = '/tmp/cugo_vserial'
@@ -73,15 +72,10 @@ def generate_launch_description():
         description='Bluetoothモード時のSPPチャンネル番号'
     )
 
-    xacro_file = os.path.join(pkg_share, 'urdf', 'my_cugo_robot.urdf.xacro')
-    doc = xacro.process_file(xacro_file)
-    robot_description_config = {'robot_description': doc.toxml()}
-
-    robot_state_publisher_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        output='screen',
-        parameters=[robot_description_config]
+    use_urdf_arg = DeclareLaunchArgument(
+        'use_urdf',
+        default_value=str(launch_defaults.get('use_urdf', True)).lower(),
+        description='URDFをロードして robot_state_publisher を起動するか: "true" / "false"'
     )
 
     def launch_setup(context, *args, **kwargs):
@@ -90,6 +84,22 @@ def generate_launch_description():
         tcp_port = LaunchConfiguration('tcp_port').perform(context)
         bt_address = LaunchConfiguration('bt_address').perform(context)
         bt_channel = LaunchConfiguration('bt_channel').perform(context)
+        use_urdf = LaunchConfiguration('use_urdf').perform(context).lower() == 'true'
+
+        actions = []
+
+        if use_urdf:
+            urdf_file = os.path.join(pkg_share, 'urdf', 'cugo_v4_5_urdf.urdf')
+            with open(urdf_file, 'r') as f:
+                robot_description_content = f.read()
+
+            robot_state_publisher_node = Node(
+                package='robot_state_publisher',
+                executable='robot_state_publisher',
+                output='screen',
+                parameters=[{'robot_description': robot_description_content}]
+            )
+            actions.append(robot_state_publisher_node)
 
         # 通信モードに応じて serial_port を上書き
         if comm_type == 'wifi':
@@ -121,10 +131,7 @@ def generate_launch_description():
                 output='screen',
                 name='socat_wifi_bridge'
             )
-            return [
-                socat_process,
-                TimerAction(period=WIFI_NODE_DELAY_SEC, actions=[cugo_node])
-            ]
+            actions += [socat_process, TimerAction(period=WIFI_NODE_DELAY_SEC, actions=[cugo_node])]
         elif comm_type == 'bluetooth':
             # rfcomm bind で /dev/rfcomm0 を作成し、シリアルポートとして使用
             # デバイス作成を待つため、cugo_nodeはBT_NODE_DELAY_SEC秒遅延起動
@@ -136,12 +143,11 @@ def generate_launch_description():
                 output='screen',
                 name='rfcomm_bt_bind'
             )
-            return [
-                rfcomm_process,
-                TimerAction(period=BT_NODE_DELAY_SEC, actions=[cugo_node])
-            ]
+            actions += [rfcomm_process, TimerAction(period=BT_NODE_DELAY_SEC, actions=[cugo_node])]
         else:
-            return [cugo_node]
+            actions.append(cugo_node)
+
+        return actions
 
     return LaunchDescription([
         log_level_arg,
@@ -150,6 +156,6 @@ def generate_launch_description():
         tcp_port_arg,
         bt_address_arg,
         bt_channel_arg,
-        robot_state_publisher_node,
+        use_urdf_arg,
         OpaqueFunction(function=launch_setup)
     ])

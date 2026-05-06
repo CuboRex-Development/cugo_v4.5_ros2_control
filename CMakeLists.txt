@@ -108,6 +108,9 @@ install(DIRECTORY launch
 install(DIRECTORY urdf
   DESTINATION share/${PROJECT_NAME}/
 )
+install(DIRECTORY meshes
+  DESTINATION share/${PROJECT_NAME}/
+)
 
 # ---------------------------------------------------------
 # テスト設定
