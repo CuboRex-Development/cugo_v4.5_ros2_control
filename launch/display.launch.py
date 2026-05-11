@@ -1,5 +1,4 @@
 import os
-import xacro
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -9,9 +8,11 @@ from launch_ros.actions import Node
 def generate_launch_description():
     pkg_share = get_package_share_directory('cugo_v4_5_ros2_control')
 
-    xacro_file = os.path.join(pkg_share, 'urdf', 'my_cugo_robot.urdf.xacro')
-    doc = xacro.process_file(xacro_file)
-    robot_description = {'robot_description': doc.toxml()}
+    # URDFを変更する場合は、以下のパスを差し替えてください
+    urdf_file = os.path.join(pkg_share, 'urdf', 'cugo_v4_5_urdf.urdf')
+    with open(urdf_file, 'r') as f:
+        robot_description_content = f.read()
+    robot_description = {'robot_description': robot_description_content}
 
     robot_state_publisher = Node(
         package='robot_state_publisher',
