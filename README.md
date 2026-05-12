@@ -1,5 +1,6 @@
-<!-- TODO:図の修正 -->
-![image](https://github.com/user-attachments/assets/be603edd-43dd-42b7-8215-2a89df03e3c2)
+<img width="2390" height="1301" alt="CuGo_V4 5" src="https://github.com/user-attachments/assets/273e8ea6-eef5-4c77-a19b-36970dbbbfcf" />
+
+
 
 # cugo_v4.5_ros2_control
 
@@ -14,8 +15,7 @@ ROS 2 Jazzy Jalisco 以降で動作します。
 
 ### 対応製品
 
-<!-- TODO: V4.5のリンクを貼る -->
-* [CuGo V4.5](null)
+* [CuGo V4.5](https://cuborex.com/product/?id=33)
 
 > [!WARNING]
 > クローラロボット開発プラットフォーム CuGo V4 / クローラロボット開発プラットフォーム V3i をご利用の方は [cugo_ros2_control2](https://github.com/CuboRex-Development/cugo_ros2_control2) を参照してください。
@@ -149,7 +149,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 # Usage
 
 > [!IMPORTANT]
-> いずれの通信モードでも、事前にマイコン(Raspberry Pi Pico 2 W)に [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) のスケッチを書き込んでおく必要があります。事前に、cugo_v4.5_ros2_motorcontrollerのInstallationの手順を実施してください。
+> いずれの通信モードでも、事前にマイコン(Raspberry Pi Pico 2 W)に [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) のスケッチを書き込んでおく必要があります。事前に、[cugo_v4.5_ros2_motorcontrollerのInstallation](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller#installation)の手順を実施してください。
 
 ### USB-Serial 接続 (デフォルト)
 
@@ -216,7 +216,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 ### Bluetoothモード
 
-ロボット側の Bluetooth SPP 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
+ロボット側の Bluetooth SPP 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller#bluetooth-%E3%83%A2%E3%83%BC%E3%83%89) を参照してください。
 
 > [!IMPORTANT]
 > 以下の手順 1・2 は初回のみ実施してください。
@@ -284,7 +284,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 ### WiFi APモード
 
-ロボット側の WiFi AP 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
+ロボット側の WiFi AP 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller#wifi-ap%E3%83%A2%E3%83%BC%E3%83%89) を参照してください。
 
 1. PC の WiFi を、ロボット側で設定したアクセスポイント(デフォルト SSID: `CuGo_AP`)に接続します。
 
@@ -306,7 +306,7 @@ WiFi ルータを用意せずに無線でロボットを操作できます。
 
 ### WiFi Stationモード
 
-ロボット側の WiFi Station 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller) を参照してください。
+ロボット側の WiFi Station 設定は [cugo_v4.5_ros2_motorcontroller](https://github.com/CuboRex-Development/cugo_v4.5_ros2_motorcontroller#wifi-station%E3%83%A2%E3%83%BC%E3%83%89) を参照してください。
 
 1. `config/params.yaml` を編集して `comm_type`、`tcp_host`、`tcp_port` を設定します。
 
@@ -376,7 +376,7 @@ URDF のロードが不要な場合は `use_urdf` を無効化できます。詳
 |    `cmd_vel_timeout`     |    `0.5`     | 他ノードからの`/cmd_vel` 受信タイムアウト [秒] (超過で速度ゼロ)                                                                                                                                                                                                                                  |
 |     `serial_timeout`     |    `0.5`     | マイコンからの受信タイムアウト [秒] (超過で再接続)。WiFi接続(APモード・Stationモード)では通信レイテンシが有線より高いため、`1.0`〜`2.0` を推奨                                                                                                                                                   |
 | `max_consecutive_errors` |     `5`      | 連続デコードエラーの許容回数。この回数を超えると受信バッファをフラッシュしてフレーミングを再同期します。通信品質が低い環境では大きくし、即座に再同期したい場合は小さくしてください                                                                                                               |
-| `response_lost_timeout`  |    `0.0`     | 応答ロスト判定時間 [秒](`0.0` で無効)。ロボットへのリクエスト送信後、この時間内に応答がなければ再度リクエストを送信します。**値により制御周期が大きく低下する可能性があります。** 通信遅延への対策としてのみ使用してください。詳細は [Note > 通信遅延対策について](#通信遅延対策について) を参照 |
+| `response_lost_timeout`  |    `0.0`     | 応答ロスト判定時間 [秒]  (`0.0` で無効)。ロボットへのリクエスト送信後、この時間内に応答がなければ再度リクエストを送信します。**値により制御周期が大きく低下する可能性があります。** 通信遅延への対策としてのみ使用してください。詳細は [Note > 通信遅延対策について](#通信遅延対策について) を参照 |
 
 > [!CAUTION]
 > `response_lost_timeout` は通信遅延の対策としてのみ使用してください。0.0以外の値を設定すると制御周期が低下する可能性があります。設定前に必ず [Note > 通信遅延対策について](#通信遅延対策について) を熟読し、適切な値を設定してください。
