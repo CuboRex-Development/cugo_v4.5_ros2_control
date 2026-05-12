@@ -1,5 +1,6 @@
-<!-- TODO:図の修正 -->
-![image](https://github.com/user-attachments/assets/be603edd-43dd-42b7-8215-2a89df03e3c2)
+<img width="2390" height="1301" alt="CuGo_V4 5" src="https://github.com/user-attachments/assets/273e8ea6-eef5-4c77-a19b-36970dbbbfcf" />
+
+
 
 # cugo_v4.5_ros2_control
 
