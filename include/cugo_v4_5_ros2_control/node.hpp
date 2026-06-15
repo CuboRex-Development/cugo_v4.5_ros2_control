@@ -97,7 +97,8 @@ private:
   // サブスクライバーとパブリッシャー
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr handshake_pub_; // ハンドシェイク状態
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr handshake_pub_;      // ハンドシェイク状態
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr robot_enabled_pub_;  // ロボット内エラー状態
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   // 追加 I/O サブスクライバ
@@ -157,6 +158,7 @@ private:
   };
 
   // データ共有
+  std::atomic<uint8_t> robot_internal_error_{0};  // ロボット内エラービットフィールド (生の uint8_t 値)
   std::atomic<ConnectionState> connection_state_{ConnectionState::CONNECTED};
   rclcpp::Time last_reconnect_attempt_time_;
   std::mutex data_mutex_;

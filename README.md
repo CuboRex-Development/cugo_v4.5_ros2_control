@@ -481,6 +481,9 @@ URDF のロードが不要な場合は `use_urdf` を無効化できます。詳
 - `/handshake_status` ([std_msgs/msg/Bool](https://docs.ros2.org/latest/api/std_msgs/msg/Bool.html))  
   マイコンとのハンドシェイク(接続確立)状態を配信します。接続中は `true`、未接続または切断時は `false` になります。
 
+- `/robot_enabled` ([std_msgs/msg/Bool](https://docs.ros2.org/latest/api/std_msgs/msg/Bool.html))  
+  ロボット内部エラーの有無を配信します。正常時は `true`、ロボット内でエラを検出した際は `false` になります。`false` の間は速度指令がゼロに強制されます。エラーが解除されると次の受信サイクルから自動的に通常制御へ復帰します。
+
 - `/controller_status` (cugo_v4_5_ros2_msgs/msg/ControllerStatus)  
   CRST01A のコントローラステータスビットを配信します。
 
