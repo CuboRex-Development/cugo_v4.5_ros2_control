@@ -226,7 +226,8 @@ Node::Node()
       subscribe_topic_name.c_str(), 1,
       std::bind(&Node::cmd_vel_callback, this, std::placeholders::_1));
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(publish_topic_name.c_str(), 10);
-  handshake_pub_ = this->create_publisher<std_msgs::msg::Bool>("handshake_status", 10);
+  handshake_pub_      = this->create_publisher<std_msgs::msg::Bool>("handshake_status", 10);
+  robot_enabled_pub_  = this->create_publisher<std_msgs::msg::Bool>("robot_enabled", 10);
 
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
@@ -533,6 +534,19 @@ void Node::serial_data_callback(const std::vector<unsigned char> & raw_packet)
       std_msgs::msg::UInt8 cfg;
       cfg.data = state.bumper_config; bumper_config_pub_->publish(cfg);
       cfg.data = state.brake_config;  brake_config_pub_->publish(cfg);
+
+      uint8_t prev_raw = robot_internal_error_.exchange(state.robot_internal_error);
+
+      bool new_error  = (state.robot_internal_error & ROBOT_INTERNAL_ERROR_BIT0) != 0;
+      bool prev_error = (prev_raw                   & ROBOT_INTERNAL_ERROR_BIT0) != 0;
+      if (new_error && !prev_error) {
+        RCLCPP_WARN(this->get_logger(), "Robot internal error detected. Stopping velocity.");
+      } else if (!new_error && prev_error) {
+        RCLCPP_WARN(this->get_logger(), "Robot internal error cleared. Resuming control.");
+      }
+      std_msgs::msg::Bool enabled_msg;
+      enabled_msg.data = !new_error;
+      robot_enabled_pub_->publish(enabled_msg);
     }
 
     if (callback_log_) {
@@ -747,7 +761,9 @@ void Node::control_loop()
   double vy = local_cmd_vel.linear.y;
   double wz = local_cmd_vel.angular.z;
 
-  if ((now - local_last_cmd_vel_time).seconds() > cmd_vel_timeout_) {
+  if ((now - local_last_cmd_vel_time).seconds() > cmd_vel_timeout_ || // cmd_velタイムアウト
+      (robot_internal_error_ & ROBOT_INTERNAL_ERROR_BIT0))            // robot_internal_error bit 0x01 検出
+  {
     vx = 0.0;
     vy = 0.0;
     wz = 0.0;

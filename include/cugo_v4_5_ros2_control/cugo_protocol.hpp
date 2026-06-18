@@ -69,6 +69,10 @@ constexpr size_t BODY_OFFSET_MD_ERROR_CODE2        = 42;
 constexpr size_t BODY_OFFSET_MD_ERROR_CODE3        = 44;
 constexpr size_t BODY_OFFSET_BUMPER_CONFIG         = 46;
 constexpr size_t BODY_OFFSET_BRAKE_CONFIG          = 47;
+constexpr size_t BODY_OFFSET_ROBOT_INTERNAL_ERROR  = 59;
+
+// ロボット内エラービットフィールド (body[59]) のビット定義
+constexpr uint8_t ROBOT_INTERNAL_ERROR_BIT0 = 0x01;  // ロボット内部エラー
 
 // enable_7_14 (body[6]) のビット定義: bit が 1 のフィールドのみ車両コントローラへ反映される
 constexpr uint8_t ENABLE_BIT_MODE_SWITCH       = 0x01;  // body[7]
@@ -142,6 +146,7 @@ struct RobotState
   uint16_t motordriver_error_code3  = 0;  // body[44-45]
   uint8_t  bumper_config            = 0;  // body[46]: フラッシュ保存値の読み出し
   uint8_t  brake_config             = 0;  // body[47]: フラッシュ保存値の読み出し
+  uint8_t  robot_internal_error     = 0;  // body[59]: ロボット内エラービットフィールド
 };
 
   /**
