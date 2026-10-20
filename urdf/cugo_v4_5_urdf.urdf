@@ -2,9 +2,9 @@
 <robot name="cugo_v4_5_urdf">
   <link name="base_footprint">
     <inertial>
-      <origin xyz="-0.016934 -0.11048 0.000166470000000007" rpy="0.0 -0.0 0.0"/>
+      <origin xyz="-0.110 0.000 0.120" rpy="0.0 0.0 0.0"/>
       <mass value="27.0"/>
-      <inertia ixx="0.079659" ixy="-0.026748" ixz="-8.07850000000164e-06" iyy="0.18884" iyz="5.54729999999924e-06" izz="0.17643"/>
+      <inertia ixx="1.0098" ixy="0.0007" ixz="0.0965" iyy="0.7791" iyz="0.0005" izz="1.5914"/>
     </inertial>
     <visual>
       <geometry>
